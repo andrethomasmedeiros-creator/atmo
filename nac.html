@@ -715,56 +715,74 @@
         
         return `
           <div class="case-card ${!c.nacAck ? 'needs-attention' : ''} ${isOnda ? 'onda-ativa' : ''}">
-            <div class="card-header-bar">
-              <div class="patient-avatar">${(c.ident || 'P')[0].toUpperCase()}</div>
+            <div class="card-header">
               <div class="patient-info">
-                <h3>${c.ident || 'NÃO IDENTIFICADO'}</h3>
-                <span>${c.sexo || '-'} • ${c.idade || '-'} anos</span>
+                <div class="patient-avatar">${(c.ident || 'P')[0].toUpperCase()}</div>
+                <div class="patient-details">
+                  <h3>${c.ident || 'NÃO IDENTIFICADO'}</h3>
+                  <span>${c.sexo || '-'} • ${c.idade || '-'} anos</span>
+                </div>
               </div>
-              <div class="case-id">${c.id}</div>
+              <div class="patient-id">${c.id}</div>
             </div>
             
-            ${isOnda ? `
-              <div class="onda-banner">
-                🚨 ONDA VERMELHA ATIVADA - ACIONAR C.C. E AGÊNCIA
+            <div class="card-body">
+              ${isOnda ? `
+                <div class="onda-alert">
+                  <h4>🚨 ONDA VERMELHA ATIVADA</h4>
+                  <p>Acionar Centro Cirúrgico e Agência Transfusional</p>
+                </div>
+              ` : ''}
+              
+              <div class="realtime-status">
+                <div class="label">Status em Tempo Real</div>
+                <div class="value">${c.statusNac || 'AVALIANDO PACIENTE'}</div>
               </div>
-            ` : ''}
-            
-            <div class="status-realtime">
-              <div class="label">STATUS EM TEMPO REAL</div>
-              <div class="value">${c.statusNac || 'AVALIANDO PACIENTE'}</div>
-            </div>
-            
-            ${c.especialidades && c.especialidades.length > 0 ? `
-              <div class="esp-badge">
-                📞 LIGAR: ${c.especialidades.join(' + ')}
+              
+              ${c.especialidades && c.especialidades.length > 0 ? `
+                <div class="especialidade-tag">
+                  <span class="icon">📞</span>
+                  LIGAR PARA: ${c.especialidades.join(' + ')}
+                </div>
+              ` : ''}
+              
+              <div class="big-timer">
+                <div class="label">Tempo desde abertura</div>
+                <div class="time timer-value" data-start="${c.createdAt?.toMillis ? c.createdAt.toMillis() : c.createdAt}">--:--</div>
               </div>
-            ` : ''}
-            
-            <div class="timer-box">
-              <div class="label">Tempo desde abertura</div>
-              <div class="timer-value" data-start="${c.createdAt?.toMillis ? c.createdAt.toMillis() : c.createdAt}">--:--</div>
-            </div>
-            
-            <div class="criterios-pills">
-              ${(c.criterios || []).map(cr => `<span class="pill">${cr}</span>`).join('')}
-            </div>
-            
-            <div class="action-buttons">
-              ${!c.nacAck ? `
-                <button class="btn btn-silenciar" onclick="silenciar('${c.id}')">🔊 SILENCIAR</button>
-              ` : `
-                <span class="btn btn-done">✅ SILENCIADO</span>
-              `}
-              ${!c.nacLigou ? `
-                <button class="btn btn-ligar" onclick="registrarLigacao('${c.id}')">📞 REGISTRAR LIGAÇÃO</button>
-              ` : `
-                <span class="btn btn-done">✅ LIGAÇÃO REGISTRADA</span>
-              `}
+              
+              <div class="criterios-list">
+                ${(c.criterios || []).map(cr => `<span class="criterio-pill">${cr}</span>`).join('')}
+              </div>
+              
+              <div class="info-grid">
+                <div class="info-item ${isOnda ? 'highlight' : ''}">
+                  <div class="label">Onda Vermelha</div>
+                  <div class="value">${c.onda || 'PENDENTE'}</div>
+                </div>
+                <div class="info-item">
+                  <div class="label">Especialista</div>
+                  <div class="value">${c.espChegou ? 'PRESENTE' : 'AGUARDANDO'}</div>
+                </div>
+              </div>
+              
+              <div class="action-buttons">
+                ${!c.nacAck ? `
+                  <button class="btn btn-silenciar" onclick="silenciar('${c.id}')">🔊 SILENCIAR</button>
+                ` : `
+                  <button class="btn btn-silenciar" disabled style="opacity: 0.5;">✅ SILENCIADO</button>
+                `}
+                ${!c.nacLigou ? `
+                  <button class="btn btn-ligar" onclick="registrarLigacao('${c.id}')">📞 REGISTRAR LIGAÇÃO</button>
+                ` : `
+                  <button class="btn btn-ligar" disabled style="opacity: 0.5;">✅ LIGAÇÃO REGISTRADA</button>
+                `}
+              </div>
             </div>
             
             <div class="card-footer">
-              Abertura: ${formatarHora(c.createdAt)}
+              <div class="footer-info">Abertura: ${formatarHora(c.createdAt)}</div>
+              <div class="footer-timer">Tempo total: <span class="timer-value" data-start="${c.createdAt?.toMillis ? c.createdAt.toMillis() : c.createdAt}">--:--</span></div>
             </div>
           </div>
         `;
