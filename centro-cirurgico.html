@@ -565,13 +565,17 @@
     <div class="text">CLIQUE PARA ATIVAR ÁUDIO</div>
   </div>
 
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
   <script>
-    // ===== ESTADO =====
-    let audioEnabled = false;
-    let audioCtx = null;
-    let timerStarted = false;
-    let timerSeconds = 0;
-    let timerInterval = null;
+    // ===== ESTADO GLOBAL =====
+    let casos = [];
+    let unsubscribe = null;
+    let audioAtivo = false;
 
     // ===== RELÓGIO =====
     function updateClock() {
@@ -581,127 +585,193 @@
     }
     setInterval(updateClock, 1000);
     updateClock();
+    
+    // Atualizar timers a cada segundo
+    setInterval(atualizarTimers, 1000);
 
     // ===== ÁUDIO =====
     function toggleAudio() {
-      const indicator = document.getElementById('audioIndicator');
-      if (!audioEnabled) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        audioEnabled = true;
-        indicator.classList.add('active');
-        indicator.innerHTML = '<div class="icon">🔊</div><div class="text">ÁUDIO ATIVADO</div>';
+      if (!audioAtivo) {
+        initAudio();
+        audioAtivo = true;
+        document.getElementById('audioIndicator').classList.add('active');
+        document.getElementById('audioIndicator').innerHTML = '<div class="icon">🔊</div><div class="text">ÁUDIO LIGADO</div>';
       }
     }
-
-    function playAlarm() {
-      if (!audioCtx || !audioEnabled) return;
-      
-      const oscillator = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      
-      oscillator.type = 'square';
-      oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-      oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.3);
-      oscillator.frequency.setValueAtTime(800, audioCtx.currentTime + 0.6);
-      
-      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.9);
-      
-      oscillator.connect(gain);
-      gain.connect(audioCtx.destination);
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.9);
-    }
-
-    // ===== RECONHECER ONDA =====
-    function reconhecerOnda() {
-      const card = document.getElementById('ccCard');
-      const banner = document.getElementById('ondaBanner');
-      const btnReconhecer = document.getElementById('btnReconhecer');
-      const btnEncerrar = document.getElementById('btnEncerrar');
-      const timerValue = document.getElementById('timerValue');
-      const timerSub = document.getElementById('timerSub');
-
-      // Atualizar visual
-      card.classList.add('acknowledged');
-      banner.classList.add('acknowledged');
-      banner.innerHTML = '<h2>✅ SALA EM PREPARO</h2>';
-
-      // Atualizar botões
-      btnReconhecer.classList.add('btn-disabled');
-      btnReconhecer.disabled = true;
-      btnReconhecer.innerHTML = '✅ RECONHECIDO';
-      
-      btnEncerrar.classList.remove('btn-disabled');
-      btnEncerrar.classList.add('btn-encerrar');
-      btnEncerrar.disabled = false;
-      btnEncerrar.onclick = encerrarProtocolo;
-
-      // Iniciar timer
-      timerValue.classList.remove('waiting');
-      timerSub.textContent = 'Preparando sala cirúrgica...';
-      timerStarted = true;
-      timerSeconds = 0;
-      
-      timerInterval = setInterval(() => {
-        timerSeconds++;
-        const mins = Math.floor(timerSeconds / 60);
-        const secs = timerSeconds % 60;
-        timerValue.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-      }, 1000);
-
-      // Mostrar box do cirurgião
-      document.getElementById('cirurgiaoBox').style.display = 'block';
-      document.getElementById('cirurgiaoNome').textContent = 'Dr. Silva (Cirurgião Geral)';
-
-      // Parar alarme
-      document.getElementById('statusBadge').textContent = 'PREPARANDO SALA';
-      document.getElementById('statusBadge').classList.remove('alert');
-    }
-
-    // ===== ENCERRAR PROTOCOLO =====
-    function encerrarProtocolo() {
-      if (confirm('Confirma que o paciente está na mesa cirúrgica?\n\nIsso encerrará o protocolo PTM.')) {
-        clearInterval(timerInterval);
-        
-        const timerValue = document.getElementById('timerValue');
-        const timerSub = document.getElementById('timerSub');
-        const btnEncerrar = document.getElementById('btnEncerrar');
-        const banner = document.getElementById('ondaBanner');
-
-        timerValue.style.color = 'var(--accent-green)';
-        timerSub.textContent = '✅ PROTOCOLO FINALIZADO';
-        
-        btnEncerrar.classList.remove('btn-encerrar');
-        btnEncerrar.classList.add('btn-disabled');
-        btnEncerrar.disabled = true;
-        btnEncerrar.innerHTML = '✅ FINALIZADO';
-
-        banner.innerHTML = '<h2>✅ PROTOCOLO PTM ENCERRADO</h2>';
-
-        document.getElementById('statusBadge').textContent = 'FINALIZADO';
-
-        alert('✅ Protocolo PTM encerrado com sucesso!\n\nTempo de preparo registrado.');
-      }
-    }
-
-    // ===== DEMO =====
-    function showDemo() {
-      document.getElementById('emptyState').style.display = 'none';
-      document.getElementById('casesGrid').style.display = 'grid';
-      document.getElementById('statusBadge').textContent = 'ONDA VERMELHA';
-      document.getElementById('statusBadge').classList.add('alert');
-    }
-
-    // Mostrar demo após 1 segundo
-    setTimeout(showDemo, 1000);
-
-    // Alarme enquanto não reconhecido
+    
+    // Alarme periódico para ondas não reconhecidas
     setInterval(() => {
-      if (!timerStarted) {
-        playAlarm();
+      if (audioAtivo) {
+        const naoReconhecido = casos.find(c => !c.ccAck);
+        if (naoReconhecido) tocarAlarme('urgente');
       }
     }, 2000);
+
+    // ===== ESCUTAR FIREBASE (APENAS ONDA VERMELHA) =====
+    function escutarCasos() {
+      if (unsubscribe) unsubscribe();
+      
+      unsubscribe = casosRef
+        .where('status', '==', 'ATIVO')
+        .where('onda', '==', 'SIM')
+        .orderBy('createdAt', 'desc')
+        .onSnapshot((snapshot) => {
+          casos = [];
+          snapshot.forEach((doc) => {
+            casos.push({ id: doc.id, ...doc.data() });
+          });
+          renderCards();
+          atualizarStatus();
+        }, (error) => {
+          console.error('Erro ao escutar casos:', error);
+        });
+    }
+
+    // ===== RENDERIZAR =====
+    function renderCards() {
+      const container = document.getElementById('casesContainer');
+      const emptyState = document.getElementById('emptyState');
+      
+      if (casos.length === 0) {
+        container.innerHTML = '';
+        emptyState.style.display = 'flex';
+        return;
+      }
+      
+      emptyState.style.display = 'none';
+      
+      container.innerHTML = casos.map(c => {
+        const reconhecido = c.ccAck;
+        
+        return `
+          <div class="cc-card ${reconhecido ? 'acknowledged' : ''}">
+            <div class="onda-banner ${reconhecido ? 'acknowledged' : ''}">
+              ${reconhecido ? '✅ SALA EM PREPARO' : '🚨 ONDA VERMELHA - PREPARAR SALA 🚨'}
+            </div>
+            
+            <div class="card-body">
+              <div class="patient-header">
+                <div class="patient-avatar">${(c.ident || 'P')[0].toUpperCase()}</div>
+                <div class="patient-info">
+                  <h3>${c.ident || 'NÃO IDENTIFICADO'}</h3>
+                  <span>${c.sexo || '-'} • ${c.idade || '-'} anos</span>
+                </div>
+                <div class="case-id">${c.id}</div>
+              </div>
+              
+              <div class="timer-section">
+                <div class="timer-label">${reconhecido ? 'Tempo de Preparo' : 'Aguardando Reconhecimento'}</div>
+                <div class="timer-value ${!reconhecido ? 'waiting' : ''}" data-start="${reconhecido && c.ccAckTime ? (c.ccAckTime.toMillis ? c.ccAckTime.toMillis() : c.ccAckTime) : ''}">
+                  ${reconhecido ? '--:--' : '⏳'}
+                </div>
+              </div>
+              
+              <div class="info-grid">
+                <div class="info-item">
+                  <div class="label">Especialidade</div>
+                  <div class="value">${(c.especialidades || []).join(', ') || '-'}</div>
+                </div>
+                <div class="info-item">
+                  <div class="label">Critérios</div>
+                  <div class="value">${(c.criterios || []).slice(0, 2).join(' + ') || '-'}</div>
+                </div>
+                <div class="info-item">
+                  <div class="label">Transporte</div>
+                  <div class="value">${c.transpEnd ? '✅ CHEGOU' : (c.transpTime ? '🚑 EM ANDAMENTO' : '⏳ AGUARDANDO')}</div>
+                </div>
+              </div>
+              
+              <div class="action-buttons">
+                ${!reconhecido ? `
+                  <button class="btn btn-reconhecer" onclick="reconhecer('${c.id}')">
+                    🔊 RECONHECER E PREPARAR SALA
+                  </button>
+                ` : `
+                  <button class="btn btn-done" disabled>✅ RECONHECIDO</button>
+                  <button class="btn btn-encerrar" onclick="encerrar('${c.id}')">
+                    🏁 PACIENTE NA MESA (ENCERRAR)
+                  </button>
+                `}
+              </div>
+            </div>
+            
+            <div class="card-footer">
+              Abertura: ${formatarHora(c.createdAt)}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function atualizarStatus() {
+      const badge = document.getElementById('statusBadge');
+      if (casos.length === 0) {
+        badge.textContent = 'AGUARDANDO';
+        badge.classList.remove('alert');
+      } else {
+        const naoReconhecidos = casos.filter(c => !c.ccAck).length;
+        if (naoReconhecidos > 0) {
+          badge.textContent = '🚨 ONDA VERMELHA';
+          badge.classList.add('alert');
+        } else {
+          badge.textContent = 'PREPARANDO SALA';
+          badge.classList.remove('alert');
+        }
+      }
+    }
+
+    function atualizarTimers() {
+      document.querySelectorAll('.timer-value[data-start]').forEach(el => {
+        const startMs = parseInt(el.getAttribute('data-start'));
+        if (startMs) {
+          const diff = Math.floor((Date.now() - startMs) / 1000);
+          const mins = Math.floor(diff / 60);
+          const secs = diff % 60;
+          el.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+      });
+    }
+
+    function formatarHora(timestamp) {
+      if (!timestamp) return '--:--:--';
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    // ===== AÇÕES =====
+    async function reconhecer(id) {
+      try {
+        await casosRef.doc(id).update({
+          ccAck: true,
+          ccAckTime: agora()
+        });
+      } catch (error) {
+        console.error('Erro:', error);
+      }
+    }
+
+    async function encerrar(id) {
+      if (!confirm('Confirma que o paciente está na mesa cirúrgica?\n\nIsso encerrará o protocolo PTM.')) {
+        return;
+      }
+      
+      try {
+        await casosRef.doc(id).update({
+          status: 'FINALIZADO',
+          ccFinalizado: true,
+          ccFinalizadoTime: agora(),
+          statusNac: 'ENCERRADO NO CENTRO CIRÚRGICO'
+        });
+        
+        alert('✅ Protocolo PTM encerrado com sucesso!');
+      } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao encerrar. Tente novamente.');
+      }
+    }
+
+    // ===== INIT =====
+    escutarCasos();
   </script>
 
 </body>
