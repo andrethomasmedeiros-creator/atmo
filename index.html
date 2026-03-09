@@ -1471,7 +1471,7 @@
           nomePaciente: caso.nome || '',
           dataNasc: caso.dataNasc || '',
           medicoPtm: caso.medico || '',
-          cirurgiaoOnda: '', // Campo opcional
+          cirurgiaoOnda: '',
           horaNacCiente: formatarDataHora(caso.nacAckTime),
           horaNacLigouEsp: formatarDataHora(caso.nacLigouTime),
           especialidadesAcionadas: (caso.especialidades || []).join(', '),
@@ -1480,18 +1480,37 @@
           idade: caso.idade || '',
           horaCcCiente: formatarDataHora(caso.ccAckTime),
           horaChegadaPacienteCc: formatarDataHora(caso.ccFinalizadoTime),
-          horaLabSolicitado: '', // Campo opcional
-          hemoderivadosSolicitados: '', // Campo opcional
-          horaInicioTransfusao: '', // Campo opcional
+          horaLabSolicitado: '',
+          hemoderivadosSolicitados: '',
+          horaInicioTransfusao: '',
           desfecho: caso.desfecho || ''
         };
         
-        await fetch(SHEETS_WEBHOOK_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(dados)
-        });
+        // Criar iframe oculto se não existir
+        let iframe = document.getElementById('sheets-iframe');
+        if (!iframe) {
+          iframe = document.createElement('iframe');
+          iframe.id = 'sheets-iframe';
+          iframe.name = 'sheets-iframe';
+          iframe.style.display = 'none';
+          document.body.appendChild(iframe);
+        }
+        
+        // Usar form para enviar dados (contorna CORS)
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = SHEETS_WEBHOOK_URL;
+        form.target = 'sheets-iframe';
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'dados';
+        input.value = JSON.stringify(dados);
+        form.appendChild(input);
+        
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
         
         console.log('✅ Dados enviados para planilha');
       } catch (error) {
