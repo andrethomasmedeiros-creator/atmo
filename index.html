@@ -1135,10 +1135,16 @@
           });
           renderPatients();
           
-          // Se paciente atual foi finalizado, voltar ao empty
-          if (currentPatient && !patients.find(p => p.id === currentPatient.id)) {
-            currentPatient = null;
-            showPanel('empty');
+          // Atualizar currentPatient se ainda existe
+          if (currentPatient) {
+            const updated = patients.find(p => p.id === currentPatient.id);
+            if (updated) {
+              currentPatient = updated; // Atualiza com dados mais recentes
+            } else {
+              // Paciente foi finalizado
+              currentPatient = null;
+              showPanel('empty');
+            }
           }
         }, (error) => {
           console.error('Erro ao escutar casos:', error);
@@ -1150,6 +1156,17 @@
       document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
       document.getElementById(`panel-${panelId}`).classList.add('active');
       updateStepper(panelId);
+      
+      // Se for painel 6, verificar se é Onda Vermelha para mostrar botão correto
+      if (panelId === '6' && currentPatient) {
+        if (currentPatient.onda === 'SIM') {
+          document.getElementById('btnAreaFinalizar').style.display = 'none';
+          document.getElementById('btnAreaSalvar').style.display = 'block';
+        } else {
+          document.getElementById('btnAreaFinalizar').style.display = 'block';
+          document.getElementById('btnAreaSalvar').style.display = 'none';
+        }
+      }
     }
 
     function updateStepper(step) {
@@ -1313,6 +1330,9 @@
           statusNac: statusText,
           ondaTime: agora()
         });
+        
+        // Atualizar estado local
+        currentPatient.onda = valor;
         
         showPanel(nextPanel);
       } catch (error) {
