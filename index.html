@@ -743,6 +743,9 @@
           <span style="font-size: 20px;">➕</span>
           NOVO PACIENTE
         </button>
+        <button class="btn-limpar" onclick="forcarLimpeza()" style="width: 100%; margin-top: 10px; padding: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 12px; cursor: pointer;">
+          🧹 FORÇAR LIMPEZA DE TELA
+        </button>
       </div>
       <div class="patients-list" id="patientsList">
         <!-- Pacientes serão renderizados aqui -->
@@ -1040,7 +1043,7 @@
         <div class="panel" id="panel-6">
           <div class="card-header">
             <h2>📝 Dados para Auditoria</h2>
-            <p>Preencha para finalizar o protocolo</p>
+            <p>Preencha os dados do paciente</p>
           </div>
 
           <div class="input-row">
@@ -1075,9 +1078,21 @@
             </select>
           </div>
 
-          <button class="action-btn success" onclick="finalizarProtocolo()">
-            🏁 FINALIZAR PROTOCOLO
-          </button>
+          <!-- Botão muda dependendo se é Onda Vermelha ou não -->
+          <div id="btnAreaFinalizar">
+            <button class="action-btn success" onclick="finalizarProtocolo()">
+              🏁 FINALIZAR PROTOCOLO
+            </button>
+          </div>
+          
+          <div id="btnAreaSalvar" style="display: none;">
+            <button class="action-btn warning" onclick="salvarDadosAuditoria()">
+              💾 SALVAR DADOS - AGUARDAR C.C.
+            </button>
+            <p style="text-align: center; margin-top: 15px; color: var(--accent-orange); font-size: 13px;">
+              ⚠️ Onda Vermelha ativa: o protocolo será encerrado pelo Centro Cirúrgico
+            </p>
+          </div>
         </div>
 
       </div>
@@ -1437,7 +1452,134 @@
     function selectPatient(id) {
       currentPatient = patients.find(p => p.id === id);
       renderPatients();
+      
+      // Restaurar estado da UI baseado nos dados do paciente
+      restaurarEstadoPaciente(currentPatient);
+      
       showPanel((currentPatient.currentPanel || 2).toString());
+    }
+    
+    // ===== RESTAURAR ESTADO DO PACIENTE =====
+    function restaurarEstadoPaciente(p) {
+      if (!p) return;
+      
+      // Limpar seleções anteriores
+      document.querySelectorAll('.criteria-item.selected').forEach(el => el.classList.remove('selected'));
+      document.querySelectorAll('.esp-item.selected').forEach(el => el.classList.remove('selected'));
+      
+      // Restaurar critérios selecionados
+      (p.criterios || []).forEach(crit => {
+        const el = document.querySelector(`.criteria-item[data-value="${crit}"]`);
+        if (el) el.classList.add('selected');
+      });
+      (p.criteriosOutros || []).forEach(crit => {
+        const el = document.querySelector(`.criteria-item[data-value="${crit}"]`);
+        if (el) el.classList.add('selected');
+      });
+      updateCriteriaCounter();
+      
+      // Restaurar especialidades selecionadas
+      (p.especialidades || []).forEach(esp => {
+        const el = document.querySelector(`.esp-item[data-value="${esp}"]`);
+        if (el) el.classList.add('selected');
+      });
+      
+      // Restaurar dados de auditoria se existirem
+      document.getElementById('inpProntuario').value = p.prontuario || '';
+      document.getElementById('inpNome').value = p.nome || '';
+      document.getElementById('inpNasc').value = p.dataNasc || '';
+      document.getElementById('inpMedico').value = p.medico || '';
+      document.getElementById('inpDesfecho').value = p.desfecho || '';
+      
+      // Mostrar botão correto no painel 6 (Onda Vermelha = Salvar, senão = Finalizar)
+      if (p.onda === 'SIM') {
+        document.getElementById('btnAreaFinalizar').style.display = 'none';
+        document.getElementById('btnAreaSalvar').style.display = 'block';
+      } else {
+        document.getElementById('btnAreaFinalizar').style.display = 'block';
+        document.getElementById('btnAreaSalvar').style.display = 'none';
+      }
+      
+      // Restaurar estado dos botões
+      if (p.espChegou) {
+        const btn = document.getElementById('btnEspChegou');
+        if (btn) {
+          btn.textContent = '✅ PRESENTE';
+          btn.disabled = true;
+        }
+      }
+      
+      if (p.transpTime) {
+        document.getElementById('btnTranspStart').style.display = 'none';
+        document.getElementById('btnTranspEnd').style.display = 'block';
+      }
+    }
+    
+    // ===== FORÇAR LIMPEZA DE TELA =====
+    function forcarLimpeza() {
+      if (confirm('Isso vai limpar a visualização atual.\n\nOs dados NÃO serão perdidos, apenas a tela será resetada.\n\nContinuar?')) {
+        currentPatient = null;
+        
+        // Limpar seleções
+        document.querySelectorAll('.criteria-item.selected').forEach(el => el.classList.remove('selected'));
+        document.querySelectorAll('.esp-item.selected').forEach(el => el.classList.remove('selected'));
+        
+        // Limpar inputs
+        document.getElementById('inpIdent').value = '';
+        document.getElementById('inpSexo').value = '';
+        document.getElementById('inpIdade').value = '';
+        document.getElementById('inpProntuario').value = '';
+        document.getElementById('inpNome').value = '';
+        document.getElementById('inpNasc').value = '';
+        document.getElementById('inpMedico').value = '';
+        document.getElementById('inpDesfecho').value = '';
+        
+        // Resetar botões
+        const btnEsp = document.getElementById('btnEspChegou');
+        if (btnEsp) {
+          btnEsp.textContent = '👨‍⚕️ ESPECIALISTA CHEGOU NA SALA';
+          btnEsp.disabled = false;
+        }
+        document.getElementById('btnTranspStart').style.display = 'block';
+        document.getElementById('btnTranspEnd').style.display = 'none';
+        
+        // Parar timers
+        Object.keys(timers).forEach(stopTimer);
+        
+        renderPatients();
+        showPanel('empty');
+      }
+    }
+    
+    // ===== SALVAR DADOS AUDITORIA (Onda Vermelha - não finaliza) =====
+    async function salvarDadosAuditoria() {
+      const prontuario = document.getElementById('inpProntuario').value;
+      if (!prontuario) {
+        alert('Prontuário é obrigatório!');
+        return;
+      }
+      
+      try {
+        await casosRef.doc(currentPatient.id).update({
+          prontuario: prontuario,
+          nome: document.getElementById('inpNome').value || 'Não Informado',
+          dataNasc: document.getElementById('inpNasc').value || 'Não Informado',
+          medico: document.getElementById('inpMedico').value || 'Não Informado',
+          desfecho: document.getElementById('inpDesfecho').value || '',
+          dadosAuditoriaPreenchidos: true,
+          statusNac: 'DADOS PREENCHIDOS - AGUARDANDO C.C.'
+        });
+        
+        alert('✅ Dados salvos!\n\nO protocolo será encerrado pelo Centro Cirúrgico quando o paciente chegar na mesa.');
+        
+        // Voltar para tela vazia ou próximo paciente
+        currentPatient = null;
+        showPanel('empty');
+        renderPatients();
+      } catch (error) {
+        console.error('Erro ao salvar:', error);
+        alert('Erro ao salvar. Tente novamente.');
+      }
     }
 
     function formatElapsed(timestamp) {
