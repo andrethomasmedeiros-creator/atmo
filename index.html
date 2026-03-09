@@ -1403,7 +1403,7 @@
       }
 
       try {
-        await casosRef.doc(currentPatient.id).update({
+        const dadosFinais = {
           status: 'FINALIZADO',
           prontuario: prontuario,
           nome: document.getElementById('inpNome').value || 'Não Informado',
@@ -1411,14 +1411,91 @@
           medico: document.getElementById('inpMedico').value || 'Não Informado',
           desfecho: desfecho,
           finalizadoAt: agora()
-        });
+        };
+        
+        await casosRef.doc(currentPatient.id).update(dadosFinais);
+        
+        // Enviar para Google Sheets
+        const casoCompleto = { ...currentPatient, ...dadosFinais };
+        await enviarParaPlanilha(casoCompleto);
         
         currentPatient = null;
         showPanel('empty');
-        alert('✅ Protocolo finalizado com sucesso!');
+        alert('✅ Protocolo finalizado com sucesso!\n\nDados salvos na planilha.');
       } catch (error) {
         console.error('Erro ao finalizar:', error);
         alert('Erro ao finalizar. Tente novamente.');
+      }
+    }
+
+    // ===== GOOGLE SHEETS WEBHOOK =====
+    const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxjmMcZIolPVe11FoeDY40rSTvfjoIi03F0a6v05DdnBpveaIWjXdVuQQK-cEw6fafr/exec';
+    
+    function formatarDataHora(timestamp) {
+      if (!timestamp) return '';
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    
+    function formatarData(timestamp) {
+      if (!timestamp) return '';
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return date.toLocaleDateString('pt-BR');
+    }
+    
+    function calcularSLA(inicio, fim) {
+      if (!inicio || !fim) return '';
+      const inicioMs = inicio.toMillis ? inicio.toMillis() : inicio;
+      const fimMs = fim.toMillis ? fim.toMillis() : fim;
+      return Math.round((fimMs - inicioMs) / 60000); // minutos
+    }
+    
+    async function enviarParaPlanilha(caso) {
+      try {
+        const dados = {
+          id: caso.id || '',
+          data: formatarData(caso.createdAt),
+          abertura: formatarDataHora(caso.createdAt),
+          horaCriterios: formatarDataHora(caso.nacTime),
+          criteriosClinicos: (caso.criterios || []).join(', '),
+          horaAcionaNac: formatarDataHora(caso.nacTime),
+          horaChegadaEsp: formatarDataHora(caso.espChegouTime),
+          slaEsp: calcularSLA(caso.espTime, caso.espChegouTime),
+          ondaVermelha: caso.onda || '',
+          horaTranspStart: formatarDataHora(caso.transpTime),
+          horaTranspFim: formatarDataHora(caso.transpEndTime),
+          slaTransp: calcularSLA(caso.transpTime, caso.transpEndTime),
+          horaFim: formatarDataHora(caso.finalizadoAt || caso.ccFinalizadoTime),
+          status: caso.status || 'FINALIZADO',
+          prontuario: caso.prontuario || '',
+          nomePaciente: caso.nome || '',
+          dataNasc: caso.dataNasc || '',
+          medicoPtm: caso.medico || '',
+          cirurgiaoOnda: '', // Campo opcional
+          horaNacCiente: formatarDataHora(caso.nacAckTime),
+          horaNacLigouEsp: formatarDataHora(caso.nacLigouTime),
+          especialidadesAcionadas: (caso.especialidades || []).join(', '),
+          identificacao: caso.ident || '',
+          sexo: caso.sexo || '',
+          idade: caso.idade || '',
+          horaCcCiente: formatarDataHora(caso.ccAckTime),
+          horaChegadaPacienteCc: formatarDataHora(caso.ccFinalizadoTime),
+          horaLabSolicitado: '', // Campo opcional
+          hemoderivadosSolicitados: '', // Campo opcional
+          horaInicioTransfusao: '', // Campo opcional
+          desfecho: caso.desfecho || ''
+        };
+        
+        await fetch(SHEETS_WEBHOOK_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dados)
+        });
+        
+        console.log('✅ Dados enviados para planilha');
+      } catch (error) {
+        console.error('Erro ao enviar para planilha:', error);
       }
     }
 
