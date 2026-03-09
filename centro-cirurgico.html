@@ -629,7 +629,7 @@
 
     // ===== RENDERIZAR =====
     function renderCards() {
-      const container = document.getElementById('casesContainer');
+      const container = document.getElementById('casesGrid');
       const emptyState = document.getElementById('emptyState');
       
       if (casos.length === 0) {
@@ -639,6 +639,7 @@
       }
       
       emptyState.style.display = 'none';
+      container.style.display = 'grid';
       
       container.innerHTML = casos.map(c => {
         const reconhecido = c.ccAck;
