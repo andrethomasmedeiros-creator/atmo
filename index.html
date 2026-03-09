@@ -1084,11 +1084,18 @@
     </main>
   </div>
 
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
   <script>
     // ===== ESTADO GLOBAL =====
     let currentPatient = null;
     let patients = [];
     let timers = {};
+    let unsubscribe = null;
 
     // ===== RELÓGIO =====
     function updateClock() {
@@ -1098,6 +1105,30 @@
     }
     setInterval(updateClock, 1000);
     updateClock();
+
+    // ===== ESCUTAR FIREBASE EM TEMPO REAL =====
+    function escutarCasos() {
+      if (unsubscribe) unsubscribe();
+      
+      unsubscribe = casosRef
+        .where('status', '==', 'ATIVO')
+        .orderBy('createdAt', 'desc')
+        .onSnapshot((snapshot) => {
+          patients = [];
+          snapshot.forEach((doc) => {
+            patients.push({ id: doc.id, ...doc.data() });
+          });
+          renderPatients();
+          
+          // Se paciente atual foi finalizado, voltar ao empty
+          if (currentPatient && !patients.find(p => p.id === currentPatient.id)) {
+            currentPatient = null;
+            showPanel('empty');
+          }
+        }, (error) => {
+          console.error('Erro ao escutar casos:', error);
+        });
+    }
 
     // ===== NAVEGAÇÃO DE PAINÉIS =====
     function showPanel(panelId) {
@@ -1124,36 +1155,46 @@
 
     // ===== NOVO PACIENTE =====
     function novoPaciente() {
+      currentPatient = null;
       showPanel('1');
       document.getElementById('inpIdent').value = '';
       document.getElementById('inpSexo').value = '';
       document.getElementById('inpIdade').value = '';
     }
 
-    // ===== INICIAR PROTOCOLO =====
-    function iniciarProtocolo() {
+    // ===== INICIAR PROTOCOLO (FIREBASE) =====
+    async function iniciarProtocolo() {
       const ident = document.getElementById('inpIdent').value;
       if (!ident) {
         alert('Preencha a identificação do paciente!');
         return;
       }
 
-      const id = `PTM-${new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit' }).replace('/', '')}-${Date.now().toString().slice(-6)}`;
+      const id = gerarIdCaso();
       
-      currentPatient = {
-        id,
-        ident,
+      const novoCaso = {
+        id: id,
+        ident: ident,
         sexo: document.getElementById('inpSexo').value || 'N/I',
         idade: document.getElementById('inpIdade').value || 'N/I',
-        startTime: Date.now(),
-        step: 2,
+        status: 'ATIVO',
+        currentPanel: 2,
+        visibleToNac: false,
+        statusNac: 'AVALIANDO CRITÉRIOS CLÍNICOS',
+        createdAt: agora(),
         criterios: [],
+        criteriosOutros: [],
         especialidades: []
       };
-
-      patients.push(currentPatient);
-      renderPatients();
-      showPanel('2');
+      
+      try {
+        await casosRef.doc(id).set(novoCaso);
+        currentPatient = novoCaso;
+        showPanel('2');
+      } catch (error) {
+        console.error('Erro ao criar caso:', error);
+        alert('Erro ao criar caso. Tente novamente.');
+      }
     }
 
     // ===== CRITÉRIOS =====
@@ -1173,7 +1214,7 @@
       document.getElementById('criteriaCounter').style.color = mainCount >= 2 ? 'var(--accent-green)' : 'var(--text-secondary)';
     }
 
-    function confirmarCriterios() {
+    async function confirmarCriterios() {
       const mainSelected = [...document.querySelectorAll('.criteria-item.main-criteria.selected')].map(el => el.dataset.value);
       const otherSelected = [...document.querySelectorAll('.criteria-item.other-criteria.selected')].map(el => el.dataset.value);
       
@@ -1182,13 +1223,22 @@
         return;
       }
       
-      currentPatient.criterios = mainSelected;
-      currentPatient.criteriosOutros = otherSelected;
-      currentPatient.step = 3;
-      currentPatient.nacTime = Date.now();
-      startTimer('timerNac', currentPatient.nacTime);
-      renderPatients();
-      showPanel('3');
+      try {
+        await casosRef.doc(currentPatient.id).update({
+          criterios: mainSelected,
+          criteriosOutros: otherSelected,
+          currentPanel: 3,
+          visibleToNac: true,
+          statusNac: 'AGUARDANDO ACIONAMENTO DE ESPECIALISTA',
+          nacTime: agora()
+        });
+        
+        startTimer('timerNac', Date.now());
+        showPanel('3');
+      } catch (error) {
+        console.error('Erro ao salvar critérios:', error);
+        alert('Erro ao salvar. Tente novamente.');
+      }
     }
 
     // ===== ESPECIALISTA =====
@@ -1196,83 +1246,145 @@
       el.classList.toggle('selected');
     }
 
-    function acionarEspecialista() {
+    async function acionarEspecialista() {
       const selected = [...document.querySelectorAll('.esp-item.selected')].map(el => el.dataset.value);
       if (selected.length === 0) {
         alert('Selecione pelo menos um especialista!');
         return;
       }
-      currentPatient.especialidades = selected;
-      currentPatient.step = 4;
-      currentPatient.espTime = Date.now();
-      stopTimer('timerNac');
-      startTimer('timerEsp', currentPatient.espTime);
-      renderPatients();
-      showPanel('4');
+      
+      try {
+        await casosRef.doc(currentPatient.id).update({
+          especialidades: selected,
+          currentPanel: 4,
+          statusNac: 'AGUARDANDO ESPECIALISTA NA SALA',
+          espTime: agora()
+        });
+        
+        stopTimer('timerNac');
+        startTimer('timerEsp', Date.now());
+        showPanel('4');
+      } catch (error) {
+        console.error('Erro ao acionar especialista:', error);
+        alert('Erro ao salvar. Tente novamente.');
+      }
     }
 
-    function especialistaChegou() {
+    async function especialistaChegou() {
       document.getElementById('btnEspChegou').textContent = '✅ PRESENTE';
       document.getElementById('btnEspChegou').disabled = true;
-      document.getElementById('btnEspChegou').classList.remove('success');
-      document.getElementById('btnEspChegou').classList.add('secondary');
       stopTimer('timerEsp');
-      currentPatient.espChegou = true;
+      
+      try {
+        await casosRef.doc(currentPatient.id).update({
+          espChegou: true,
+          espChegouTime: agora(),
+          statusNac: 'ESPECIALISTA NA SALA - DECIDINDO ONDA'
+        });
+      } catch (error) {
+        console.error('Erro:', error);
+      }
     }
 
     // ===== ONDA VERMELHA =====
-    function ativarOnda(valor) {
-      currentPatient.onda = valor;
-      currentPatient.step = 5;
-      renderPatients();
+    async function ativarOnda(valor) {
+      const nextPanel = valor === 'SIM' ? '5a' : '5b';
+      const statusText = valor === 'SIM' ? 'ONDA VERMELHA - TRANSPORTE AO C.C.' : 'TRANSFUSÃO LOCAL - SOLICITANDO HEMODERIVADOS';
       
-      if (valor === 'SIM') {
-        showPanel('5a');
-      } else {
-        showPanel('5b');
+      try {
+        await casosRef.doc(currentPatient.id).update({
+          onda: valor,
+          currentPanel: nextPanel,
+          statusNac: statusText,
+          ondaTime: agora()
+        });
+        
+        showPanel(nextPanel);
+      } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao salvar. Tente novamente.');
       }
     }
 
     // ===== TRANSPORTE =====
-    function iniciarTransporte() {
+    async function iniciarTransporte() {
       document.getElementById('btnTranspStart').style.display = 'none';
       document.getElementById('btnTranspEnd').style.display = 'block';
-      currentPatient.transpTime = Date.now();
-      startTimer('timerTransp', currentPatient.transpTime);
+      
+      try {
+        await casosRef.doc(currentPatient.id).update({
+          transpTime: agora(),
+          statusNac: 'TRANSPORTE A CAMINHO DO C.C.'
+        });
+        
+        startTimer('timerTransp', Date.now());
+      } catch (error) {
+        console.error('Erro:', error);
+      }
     }
 
-    function finalizarTransporte() {
+    async function finalizarTransporte() {
       stopTimer('timerTransp');
-      currentPatient.step = 6;
-      renderPatients();
-      showPanel('6');
+      
+      try {
+        await casosRef.doc(currentPatient.id).update({
+          transpEnd: true,
+          transpEndTime: agora(),
+          currentPanel: '6',
+          statusNac: 'PACIENTE NO C.C. - AGUARDANDO AUDITORIA'
+        });
+        
+        showPanel('6');
+      } catch (error) {
+        console.error('Erro:', error);
+      }
     }
 
-    function avancarHemo() {
-      currentPatient.step = 6;
-      renderPatients();
-      showPanel('6');
+    async function avancarHemo() {
+      try {
+        await casosRef.doc(currentPatient.id).update({
+          currentPanel: '6',
+          statusNac: 'AGUARDANDO AUDITORIA'
+        });
+        
+        showPanel('6');
+      } catch (error) {
+        console.error('Erro:', error);
+      }
     }
 
     // ===== FINALIZAÇÃO =====
-    function finalizarProtocolo() {
+    async function finalizarProtocolo() {
       const prontuario = document.getElementById('inpProntuario').value;
       if (!prontuario) {
         alert('Prontuário é obrigatório!');
         return;
       }
-
-      currentPatient.prontuario = prontuario;
-      currentPatient.desfecho = document.getElementById('inpDesfecho').value;
-      currentPatient.finalizado = true;
-
-      // Remove da lista de ativos
-      patients = patients.filter(p => p.id !== currentPatient.id);
-      currentPatient = null;
       
-      renderPatients();
-      showPanel('empty');
-      alert('✅ Protocolo finalizado com sucesso!');
+      const desfecho = document.getElementById('inpDesfecho').value;
+      if (!desfecho) {
+        alert('Selecione o desfecho!');
+        return;
+      }
+
+      try {
+        await casosRef.doc(currentPatient.id).update({
+          status: 'FINALIZADO',
+          prontuario: prontuario,
+          nome: document.getElementById('inpNome').value || 'Não Informado',
+          dataNasc: document.getElementById('inpNasc').value || 'Não Informado',
+          medico: document.getElementById('inpMedico').value || 'Não Informado',
+          desfecho: desfecho,
+          finalizadoAt: agora()
+        });
+        
+        currentPatient = null;
+        showPanel('empty');
+        alert('✅ Protocolo finalizado com sucesso!');
+      } catch (error) {
+        console.error('Erro ao finalizar:', error);
+        alert('Erro ao finalizar. Tente novamente.');
+      }
     }
 
     // ===== TIMERS =====
@@ -1286,8 +1398,6 @@
         const el = document.getElementById(elementId);
         if (el) {
           el.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-          
-          // Alerta visual se passar de 10 min
           if (diff >= 600) {
             el.parentElement.classList.add('critical');
           }
@@ -1312,14 +1422,14 @@
       }
 
       list.innerHTML = patients.map(p => `
-        <div class="patient-card ${p.id === currentPatient?.id ? 'active' : ''} ${p.step >= 4 ? 'critical' : ''}" onclick="selectPatient('${p.id}')">
+        <div class="patient-card ${p.id === currentPatient?.id ? 'active' : ''} ${(p.currentPanel || 2) >= 4 ? 'critical' : ''}" onclick="selectPatient('${p.id}')">
           <div class="patient-header">
             <div class="patient-id">${p.id}</div>
-            <div class="patient-step">PASSO ${p.step}</div>
+            <div class="patient-step">PASSO ${p.currentPanel || 2}</div>
           </div>
           <div class="patient-name">${p.ident}</div>
           <div class="patient-info">${p.sexo} • ${p.idade} anos</div>
-          <div class="patient-timer">${formatElapsed(p.startTime)}</div>
+          <div class="patient-timer">${formatElapsed(p.createdAt)}</div>
         </div>
       `).join('');
     }
@@ -1327,10 +1437,12 @@
     function selectPatient(id) {
       currentPatient = patients.find(p => p.id === id);
       renderPatients();
-      showPanel(currentPatient.step.toString());
+      showPanel((currentPatient.currentPanel || 2).toString());
     }
 
-    function formatElapsed(startTime) {
+    function formatElapsed(timestamp) {
+      if (!timestamp) return '00:00';
+      const startTime = timestamp.toMillis ? timestamp.toMillis() : timestamp;
       const diff = Math.floor((Date.now() - startTime) / 1000);
       const mins = Math.floor(diff / 60);
       const secs = diff % 60;
@@ -1339,7 +1451,7 @@
 
     // ===== INIT =====
     showPanel('empty');
-    renderPatients();
+    escutarCasos();
   </script>
 
 </body>
