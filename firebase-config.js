@@ -1,27 +1,15 @@
 // ============================================
-// CONFIGURAÇÃO DO FIREBASE
-// ============================================
-// 
-// INSTRUÇÕES:
-// 1. Acesse https://console.firebase.google.com/
-// 2. Crie um novo projeto ou selecione existente
-// 3. Vá em Configurações > Seus apps > Adicionar app (Web)
-// 4. Copie o objeto firebaseConfig e cole abaixo
-//
+// CONFIGURAÇÃO DO FIREBASE - PTM SALA VERMELHA HRVJ
 // ============================================
 
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY_AQUI",
-  authDomain: "SEU_PROJETO.firebaseapp.com",
-  projectId: "SEU_PROJETO",
-  storageBucket: "SEU_PROJETO.appspot.com",
-  messagingSenderId: "SEU_SENDER_ID",
-  appId: "SEU_APP_ID"
+  apiKey: "AIzaSyAiQ1x9AEGi1oIr_i-hi_kulEWRzgF7JZc",
+  authDomain: "ptm-sala-vermelha-hrvj.firebaseapp.com",
+  projectId: "ptm-sala-vermelha-hrvj",
+  storageBucket: "ptm-sala-vermelha-hrvj.firebasestorage.app",
+  messagingSenderId: "1030914129581",
+  appId: "1:1030914129581:web:a2b0d53ccb725123ffd024"
 };
-
-// ============================================
-// NÃO EDITE ABAIXO DESTA LINHA
-// ============================================
 
 // Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
@@ -31,9 +19,6 @@ const db = firebase.firestore();
 
 // Referência à coleção de casos
 const casosRef = db.collection('casos');
-
-// Configuração de timezone
-const TZ = "America/Fortaleza";
 
 // ============================================
 // FUNÇÕES UTILITÁRIAS
@@ -48,7 +33,7 @@ function gerarIdCaso() {
   return `PTM-${dia}${mes}-${timestamp}`;
 }
 
-// Formatar tempo
+// Formatar tempo (hh:mm:ss)
 function formatarTempo(segundos) {
   const h = Math.floor(segundos / 3600);
   const m = Math.floor((segundos % 3600) / 60);
@@ -71,7 +56,7 @@ function agora() {
 // Calcular diferença em segundos
 function diffSegundos(timestamp) {
   if (!timestamp) return 0;
-  const ms = Date.now() - timestamp.toMillis();
+  const ms = Date.now() - (timestamp.toMillis ? timestamp.toMillis() : timestamp);
   return Math.floor(ms / 1000);
 }
 
@@ -117,4 +102,4 @@ function tocarAlarme(tipo = 'padrao') {
   osc.stop(audioCtx.currentTime + 1);
 }
 
-console.log('Firebase Config carregado!');
+console.log('✅ Firebase Config carregado! Projeto: ptm-sala-vermelha-hrvj');
