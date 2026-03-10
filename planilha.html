@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planilha PTM - Acesso Restrito</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a24 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .login-box {
+      background: #1a1a24;
+      border: 2px solid #ff9500;
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(255, 149, 0, 0.2);
+    }
+    
+    .login-box h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+      color: #ff9500;
+    }
+    
+    .login-box p {
+      color: #8888a0;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    
+    .login-box input {
+      width: 100%;
+      padding: 15px 20px;
+      font-size: 18px;
+      border: 1px solid #2a2a3a;
+      border-radius: 12px;
+      background: #0a0a0f;
+      color: white;
+      text-align: center;
+      letter-spacing: 3px;
+      margin-bottom: 20px;
+    }
+    
+    .login-box input:focus {
+      outline: none;
+      border-color: #ff9500;
+      box-shadow: 0 0 20px rgba(255, 149, 0, 0.3);
+    }
+    
+    .login-box button {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      background: #ff9500;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .login-box button:hover {
+      background: #ffaa22;
+      transform: scale(1.02);
+    }
+    
+    .login-error {
+      color: #ff2d55;
+      font-size: 14px;
+      margin-top: 15px;
+      display: none;
+    }
+    
+    .voltar {
+      margin-top: 20px;
+    }
+    
+    .voltar a {
+      color: #8888a0;
+      font-size: 14px;
+      text-decoration: none;
+    }
+    
+    .voltar a:hover {
+      color: #ff9500;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-box">
+    <h1>📊 PLANILHA PTM</h1>
+    <p>Dados de auditoria - Acesso restrito<br>Digite a senha para continuar</p>
+    <input type="password" id="senha" placeholder="••••••••" onkeypress="if(event.key==='Enter') verificarSenha()">
+    <button onclick="verificarSenha()">ACESSAR PLANILHA</button>
+    <div class="login-error" id="erro">❌ Senha incorreta</div>
+    <div class="voltar">
+      <a href="https://ptm-hrvj.vercel.app">← Voltar ao Portal</a>
+    </div>
+  </div>
+
+  <script>
+    const SENHA_PLANILHA = 'HRVJ2026';
+    const URL_PLANILHA = 'https://docs.google.com/spreadsheets/d/1xyFv21zCrT6U7LWYNjlkBvAcqDRGco4P8Zyv-hv7aUA/';
+    
+    function verificarSenha() {
+      const senhaDigitada = document.getElementById('senha').value;
+      const erro = document.getElementById('erro');
+      
+      if (senhaDigitada === SENHA_PLANILHA) {
+        // Redirecionar para a planilha
+        window.location.href = URL_PLANILHA;
+      } else {
+        erro.style.display = 'block';
+        document.getElementById('senha').value = '';
+        document.getElementById('senha').focus();
+        setTimeout(() => { erro.style.display = 'none'; }, 3000);
+      }
+    }
+    
+    // Focar no campo de senha ao carregar
+    document.getElementById('senha').focus();
+  </script>
+
+</body>
+</html>
