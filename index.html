@@ -1009,34 +1009,103 @@
         <div class="panel" id="panel-5b">
           <div class="card-header">
             <h2>🩸 Protocolo Transfusão Maciça Local</h2>
-            <p>Checklist e acompanhamento</p>
+            <p>Solicitação de hemoderivados e acompanhamento</p>
           </div>
 
-          <div style="background: var(--bg-primary); padding: 20px; border-radius: 16px; margin-bottom: 20px;">
-            <h4 style="margin-bottom: 15px; color: var(--accent-orange);">📋 Checklist Obrigatório:</h4>
-            <div style="display: grid; gap: 10px;">
-              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                <input type="checkbox" style="width: 20px; height: 20px;"> 
-                <span>Hemograma + Plaquetas</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                <input type="checkbox" style="width: 20px; height: 20px;"> 
-                <span>TAP / TTPA / Fibrinogênio</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                <input type="checkbox" style="width: 20px; height: 20px;"> 
-                <span>Gasometria Arterial</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                <input type="checkbox" style="width: 20px; height: 20px;"> 
-                <span>Pacote PTM x3 Solicitado</span>
-              </label>
+          <!-- ETAPA 1: Checklist de Exames -->
+          <div id="etapa5b-1">
+            <div style="background: var(--bg-primary); padding: 20px; border-radius: 16px; margin-bottom: 20px;">
+              <h4 style="margin-bottom: 15px; color: var(--accent-orange);">📋 Exames Solicitados:</h4>
+              <div style="display: grid; gap: 10px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                  <input type="checkbox" id="chkHemograma" style="width: 20px; height: 20px;"> 
+                  <span>Hemograma + Plaquetas</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                  <input type="checkbox" id="chkCoagulacao" style="width: 20px; height: 20px;"> 
+                  <span>TAP / TTPA / Fibrinogênio</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                  <input type="checkbox" id="chkGasometria" style="width: 20px; height: 20px;"> 
+                  <span>Gasometria Arterial</span>
+                </label>
+              </div>
             </div>
+
+            <div style="background: var(--bg-primary); padding: 20px; border-radius: 16px; margin-bottom: 20px;">
+              <h4 style="margin-bottom: 15px; color: var(--accent-red);">🩸 Hemoderivados Solicitados:</h4>
+              <div style="display: grid; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <input type="checkbox" id="chkHemacias" style="width: 20px; height: 20px;" onchange="toggleHemoQtd('hemacias')">
+                  <span style="flex: 1;">Concentrado de Hemácias</span>
+                  <input type="number" id="qtdHemacias" min="0" placeholder="Qtd" style="width: 70px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: white;" disabled>
+                  <span>U</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <input type="checkbox" id="chkPlasma" style="width: 20px; height: 20px;" onchange="toggleHemoQtd('plasma')">
+                  <span style="flex: 1;">Plasma Fresco Congelado</span>
+                  <input type="number" id="qtdPlasma" min="0" placeholder="Qtd" style="width: 70px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: white;" disabled>
+                  <span>U</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <input type="checkbox" id="chkPlaquetas" style="width: 20px; height: 20px;" onchange="toggleHemoQtd('plaquetas')">
+                  <span style="flex: 1;">Plaquetas</span>
+                  <input type="number" id="qtdPlaquetas" min="0" placeholder="Qtd" style="width: 70px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: white;" disabled>
+                  <span>U</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <input type="checkbox" id="chkCrio" style="width: 20px; height: 20px;" onchange="toggleHemoQtd('crio')">
+                  <span style="flex: 1;">Crioprecipitado</span>
+                  <input type="number" id="qtdCrio" min="0" placeholder="Qtd" style="width: 70px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: white;" disabled>
+                  <span>U</span>
+                </div>
+              </div>
+            </div>
+
+            <button class="action-btn warning" onclick="confirmarHemoderivados()">
+              ✅ CONFIRMAR SOLICITAÇÃO
+            </button>
           </div>
 
-          <button class="action-btn warning" onclick="avancarHemo()">
-            ✅ TUDO SOLICITADO - AVANÇAR
-          </button>
+          <!-- ETAPA 2: Início da Hemotransfusão -->
+          <div id="etapa5b-2" style="display: none;">
+            <div style="background: linear-gradient(135deg, rgba(255, 45, 85, 0.1), rgba(255, 149, 0, 0.1)); padding: 20px; border-radius: 16px; margin-bottom: 20px; border: 1px solid var(--accent-orange);">
+              <h4 style="color: var(--accent-orange); margin-bottom: 10px;">📦 Hemoderivados Solicitados:</h4>
+              <div id="resumoHemoderivados" style="font-size: 14px; color: var(--text-secondary);"></div>
+            </div>
+
+            <button class="action-btn primary" id="btnIniciarHemo" onclick="iniciarHemotransfusao()">
+              🩸 INICIAR HEMOTRANSFUSÃO
+            </button>
+          </div>
+
+          <!-- ETAPA 3: Timer de Hemotransfusão -->
+          <div id="etapa5b-3" style="display: none;">
+            <div class="big-timer" id="timerHemoContainer">
+              <div class="big-timer-label">Tempo de Hemotransfusão</div>
+              <div class="big-timer-value" id="timerHemo">00:00</div>
+            </div>
+
+            <div id="alertaExames" style="display: none; background: var(--accent-orange); padding: 20px; border-radius: 16px; margin: 20px 0; text-align: center; animation: pulse 1s infinite;">
+              <h3 style="color: white; margin-bottom: 10px;">⚠️ COLETAR NOVOS EXAMES!</h3>
+              <p style="color: white; opacity: 0.9;">Tempo de hemotransfusão atingido</p>
+              <button class="action-btn secondary" onclick="silenciarAlerta()" style="margin-top: 10px;">
+                🔇 SILENCIAR ALERTA
+              </button>
+            </div>
+
+            <div id="alertaExames60" style="display: none; background: var(--accent-red); padding: 20px; border-radius: 16px; margin: 20px 0; text-align: center; animation: pulse 0.5s infinite;">
+              <h3 style="color: white; margin-bottom: 10px;">🚨 URGENTE: COLETAR EXAMES AGORA!</h3>
+              <p style="color: white; opacity: 0.9;">60 minutos de hemotransfusão</p>
+              <button class="action-btn secondary" onclick="silenciarAlerta60()" style="margin-top: 10px;">
+                🔇 SILENCIAR ALERTA
+              </button>
+            </div>
+
+            <button class="action-btn success" onclick="finalizarHemotransfusao()">
+              ✅ CONCLUIR HEMOTRANSFUSÃO - IR PARA DESFECHO
+            </button>
+          </div>
         </div>
 
         <!-- PAINEL 6: AUDITORIA / FINALIZAÇÃO -->
@@ -1069,13 +1138,41 @@
 
           <div class="input-group">
             <label>Desfecho</label>
-            <select id="inpDesfecho">
+            <select id="inpDesfecho" onchange="verificarDesfechoPTM()">
               <option value="">Selecione...</option>
               <option value="Estabilidade">✅ Estabilidade do Paciente</option>
               <option value="Sangramento Controlado">🛑 Sangramento Controlado</option>
               <option value="Encaminhado CC">🏥 Encaminhado ao C.C.</option>
+              <option value="Continuar PTM">🩸 Continuar PTM - Mais Hemotransfusão</option>
               <option value="Óbito">✝️ Óbito</option>
             </select>
+          </div>
+
+          <!-- Campo adicional para continuar PTM -->
+          <div id="areaContinuarPTM" style="display: none; background: var(--bg-primary); padding: 20px; border-radius: 16px; margin-bottom: 20px;">
+            <h4 style="color: var(--accent-orange); margin-bottom: 15px;">🩸 Especifique os hemoderivados adicionais:</h4>
+            <div style="display: grid; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="flex: 1;">Concentrado de Hemácias:</span>
+                <input type="number" id="qtdHemaciasExtra" min="0" value="0" style="width: 70px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: white;">
+                <span>U</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="flex: 1;">Plasma Fresco Congelado:</span>
+                <input type="number" id="qtdPlasmaExtra" min="0" value="0" style="width: 70px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: white;">
+                <span>U</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="flex: 1;">Plaquetas:</span>
+                <input type="number" id="qtdPlaquetasExtra" min="0" value="0" style="width: 70px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: white;">
+                <span>U</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="flex: 1;">Crioprecipitado:</span>
+                <input type="number" id="qtdCrioExtra" min="0" value="0" style="width: 70px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: white;">
+                <span>U</span>
+              </div>
+            </div>
           </div>
 
           <!-- Botão muda dependendo se é Onda Vermelha ou não -->
@@ -1375,16 +1472,199 @@
       }
     }
 
-    async function avancarHemo() {
+    // ===== HEMOTRANSFUSÃO (SEM ONDA VERMELHA) =====
+    let hemoTimerInterval = null;
+    let hemoStartTime = null;
+    let alerta30Disparado = false;
+    let alerta60Disparado = false;
+    let audioCtx = null;
+
+    function toggleHemoQtd(tipo) {
+      const checkbox = document.getElementById(`chk${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
+      const input = document.getElementById(`qtd${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
+      
+      const map = {
+        'hemacias': ['chkHemacias', 'qtdHemacias'],
+        'plasma': ['chkPlasma', 'qtdPlasma'],
+        'plaquetas': ['chkPlaquetas', 'qtdPlaquetas'],
+        'crio': ['chkCrio', 'qtdCrio']
+      };
+      
+      const [chkId, qtdId] = map[tipo];
+      const chk = document.getElementById(chkId);
+      const qtd = document.getElementById(qtdId);
+      
+      if (chk.checked) {
+        qtd.disabled = false;
+        qtd.focus();
+      } else {
+        qtd.disabled = true;
+        qtd.value = '';
+      }
+    }
+
+    async function confirmarHemoderivados() {
+      const hemoderivados = [];
+      
+      if (document.getElementById('chkHemacias').checked) {
+        const qtd = document.getElementById('qtdHemacias').value || 0;
+        hemoderivados.push(`Hemácias: ${qtd}U`);
+      }
+      if (document.getElementById('chkPlasma').checked) {
+        const qtd = document.getElementById('qtdPlasma').value || 0;
+        hemoderivados.push(`Plasma: ${qtd}U`);
+      }
+      if (document.getElementById('chkPlaquetas').checked) {
+        const qtd = document.getElementById('qtdPlaquetas').value || 0;
+        hemoderivados.push(`Plaquetas: ${qtd}U`);
+      }
+      if (document.getElementById('chkCrio').checked) {
+        const qtd = document.getElementById('qtdCrio').value || 0;
+        hemoderivados.push(`Crioprecipitado: ${qtd}U`);
+      }
+      
+      if (hemoderivados.length === 0) {
+        alert('Selecione pelo menos um hemoderivado!');
+        return;
+      }
+      
+      try {
+        await casosRef.doc(currentPatient.id).update({
+          hemoderivadosSolicitados: hemoderivados.join(', '),
+          horaLabSolicitado: agora(),
+          statusNac: 'HEMODERIVADOS SOLICITADOS - AGUARDANDO INÍCIO'
+        });
+        
+        currentPatient.hemoderivadosSolicitados = hemoderivados.join(', ');
+        
+        // Mostrar resumo
+        document.getElementById('resumoHemoderivados').innerHTML = hemoderivados.join('<br>');
+        
+        // Trocar etapa
+        document.getElementById('etapa5b-1').style.display = 'none';
+        document.getElementById('etapa5b-2').style.display = 'block';
+      } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao salvar. Tente novamente.');
+      }
+    }
+
+    async function iniciarHemotransfusao() {
+      try {
+        await casosRef.doc(currentPatient.id).update({
+          horaInicioTransfusao: agora(),
+          statusNac: 'HEMOTRANSFUSÃO EM ANDAMENTO'
+        });
+        
+        hemoStartTime = Date.now();
+        alerta30Disparado = false;
+        alerta60Disparado = false;
+        
+        // Trocar etapa
+        document.getElementById('etapa5b-2').style.display = 'none';
+        document.getElementById('etapa5b-3').style.display = 'block';
+        
+        // Iniciar timer
+        startHemoTimer();
+        
+      } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao salvar. Tente novamente.');
+      }
+    }
+
+    function startHemoTimer() {
+      if (hemoTimerInterval) clearInterval(hemoTimerInterval);
+      
+      hemoTimerInterval = setInterval(() => {
+        const diff = Math.floor((Date.now() - hemoStartTime) / 1000);
+        const mins = Math.floor(diff / 60);
+        const secs = diff % 60;
+        
+        const el = document.getElementById('timerHemo');
+        if (el) {
+          el.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+        
+        // Alerta 30 minutos
+        if (mins >= 30 && !alerta30Disparado) {
+          alerta30Disparado = true;
+          document.getElementById('alertaExames').style.display = 'block';
+          tocarAlarmeLeve();
+        }
+        
+        // Alerta 60 minutos
+        if (mins >= 60 && !alerta60Disparado) {
+          alerta60Disparado = true;
+          document.getElementById('alertaExames').style.display = 'none';
+          document.getElementById('alertaExames60').style.display = 'block';
+          tocarAlarmeUrgente();
+        }
+        
+      }, 1000);
+    }
+
+    function tocarAlarmeLeve() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = 800;
+        gain.gain.value = 0.3;
+        osc.start();
+        setTimeout(() => osc.stop(), 500);
+      } catch (e) { console.log('Audio não suportado'); }
+    }
+
+    function tocarAlarmeUrgente() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = 1200;
+        gain.gain.value = 0.5;
+        osc.start();
+        setTimeout(() => { osc.frequency.value = 800; }, 200);
+        setTimeout(() => { osc.frequency.value = 1200; }, 400);
+        setTimeout(() => osc.stop(), 600);
+      } catch (e) { console.log('Audio não suportado'); }
+    }
+
+    function silenciarAlerta() {
+      document.getElementById('alertaExames').style.display = 'none';
+    }
+
+    function silenciarAlerta60() {
+      document.getElementById('alertaExames60').style.display = 'none';
+    }
+
+    async function finalizarHemotransfusao() {
+      if (hemoTimerInterval) clearInterval(hemoTimerInterval);
+      
       try {
         await casosRef.doc(currentPatient.id).update({
           currentPanel: '6',
-          statusNac: 'AGUARDANDO AUDITORIA'
+          statusNac: 'HEMOTRANSFUSÃO CONCLUÍDA - AGUARDANDO DESFECHO'
         });
         
         showPanel('6');
       } catch (error) {
         console.error('Erro:', error);
+      }
+    }
+
+    function verificarDesfechoPTM() {
+      const desfecho = document.getElementById('inpDesfecho').value;
+      const areaExtra = document.getElementById('areaContinuarPTM');
+      
+      if (desfecho === 'Continuar PTM') {
+        areaExtra.style.display = 'block';
+      } else {
+        areaExtra.style.display = 'none';
       }
     }
 
@@ -1413,6 +1693,23 @@
           finalizadoAt: agora()
         };
         
+        // Se continuar PTM, adicionar hemoderivados extras
+        if (desfecho === 'Continuar PTM') {
+          const extras = [];
+          const qtdHemacias = document.getElementById('qtdHemaciasExtra').value;
+          const qtdPlasma = document.getElementById('qtdPlasmaExtra').value;
+          const qtdPlaquetas = document.getElementById('qtdPlaquetasExtra').value;
+          const qtdCrio = document.getElementById('qtdCrioExtra').value;
+          
+          if (qtdHemacias > 0) extras.push(`Hemácias: ${qtdHemacias}U`);
+          if (qtdPlasma > 0) extras.push(`Plasma: ${qtdPlasma}U`);
+          if (qtdPlaquetas > 0) extras.push(`Plaquetas: ${qtdPlaquetas}U`);
+          if (qtdCrio > 0) extras.push(`Crioprecipitado: ${qtdCrio}U`);
+          
+          dadosFinais.hemoderivadosExtras = extras.join(', ');
+          dadosFinais.desfecho = `Continuar PTM - ${extras.join(', ')}`;
+        }
+        
         await casosRef.doc(currentPatient.id).update(dadosFinais);
         
         // Enviar para Google Sheets
@@ -1429,7 +1726,8 @@
     }
 
     // ===== GOOGLE SHEETS WEBHOOK =====
-    const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxAIVEcydzoYA7WyF0QqKHtpXZrOpKTMfqQoxaZhmVtiCSi_IQgDMMza3iIzX-k_wTW/exec';
+    const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby2SP8SVIjM22FFtkh5ovOuWGST7pnzEDxmsd56V2ef4gw02PRTweoJU46oWYUC2EHj/exec';
+    const SHEETS_CHAVE_SECRETA = 'HRVJ-PTM-2026-SEGURO';
     
     function formatarDataHora(timestamp) {
       if (!timestamp) return '';
@@ -1507,6 +1805,13 @@
         input.name = 'dados';
         input.value = JSON.stringify(dados);
         form.appendChild(input);
+        
+        // Adicionar chave secreta
+        const inputChave = document.createElement('input');
+        inputChave.type = 'hidden';
+        inputChave.name = 'chave';
+        inputChave.value = SHEETS_CHAVE_SECRETA;
+        form.appendChild(inputChave);
         
         document.body.appendChild(form);
         form.submit();
@@ -1623,12 +1928,51 @@
           btn.textContent = '✅ PRESENTE';
           btn.disabled = true;
         }
+      } else {
+        const btn = document.getElementById('btnEspChegou');
+        if (btn) {
+          btn.textContent = '👨‍⚕️ ESPECIALISTA CHEGOU NA SALA';
+          btn.disabled = false;
+        }
       }
       
       if (p.transpTime) {
         document.getElementById('btnTranspStart').style.display = 'none';
         document.getElementById('btnTranspEnd').style.display = 'block';
+      } else {
+        document.getElementById('btnTranspStart').style.display = 'block';
+        document.getElementById('btnTranspEnd').style.display = 'none';
       }
+      
+      // Restaurar estado do painel 5b (hemotransfusão)
+      if (p.currentPanel === '5b') {
+        // Resetar etapas
+        document.getElementById('etapa5b-1').style.display = 'block';
+        document.getElementById('etapa5b-2').style.display = 'none';
+        document.getElementById('etapa5b-3').style.display = 'none';
+        
+        if (p.hemoderivadosSolicitados && !p.horaInicioTransfusao) {
+          // Já solicitou hemoderivados, mostrar etapa 2
+          document.getElementById('etapa5b-1').style.display = 'none';
+          document.getElementById('etapa5b-2').style.display = 'block';
+          document.getElementById('resumoHemoderivados').innerHTML = p.hemoderivadosSolicitados.replace(/, /g, '<br>');
+        }
+        
+        if (p.horaInicioTransfusao) {
+          // Já iniciou hemotransfusão, mostrar etapa 3
+          document.getElementById('etapa5b-1').style.display = 'none';
+          document.getElementById('etapa5b-2').style.display = 'none';
+          document.getElementById('etapa5b-3').style.display = 'block';
+          
+          // Reiniciar timer
+          const inicioMs = p.horaInicioTransfusao.toMillis ? p.horaInicioTransfusao.toMillis() : p.horaInicioTransfusao;
+          hemoStartTime = inicioMs;
+          startHemoTimer();
+        }
+      }
+      
+      // Verificar desfecho PTM
+      verificarDesfechoPTM();
     }
     
     // ===== FORÇAR LIMPEZA DE TELA =====
