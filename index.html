@@ -1284,11 +1284,42 @@
 
     // ===== NOVO PACIENTE =====
     function novoPaciente() {
+      // Apenas limpar o paciente atual da seleção, mas manter a lista
       currentPatient = null;
-      showPanel('1');
+      
+      // Limpar campos do formulário
       document.getElementById('inpIdent').value = '';
       document.getElementById('inpSexo').value = '';
       document.getElementById('inpIdade').value = '';
+      
+      // Limpar seleções de critérios e especialistas
+      document.querySelectorAll('.criteria-item.selected').forEach(el => el.classList.remove('selected'));
+      document.querySelectorAll('.esp-item.selected').forEach(el => el.classList.remove('selected'));
+      updateCriteriaCounter();
+      
+      // Resetar etapas do painel 5b
+      const etapa1 = document.getElementById('etapa5b-1');
+      const etapa2 = document.getElementById('etapa5b-2');
+      const etapa3 = document.getElementById('etapa5b-3');
+      if (etapa1) etapa1.style.display = 'block';
+      if (etapa2) etapa2.style.display = 'none';
+      if (etapa3) etapa3.style.display = 'none';
+      
+      // Resetar checkboxes de hemoderivados
+      ['chkHemacias', 'chkPlasma', 'chkPlaquetas', 'chkCrio'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.checked = false;
+      });
+      ['qtdHemacias', 'qtdPlasma', 'qtdPlaquetas', 'qtdCrio'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.value = ''; el.disabled = true; }
+      });
+      
+      // Atualizar a sidebar para remover destaque do paciente anterior
+      renderPatients();
+      
+      // Mostrar painel de identificação
+      showPanel('1');
     }
 
     // ===== INICIAR PROTOCOLO (FIREBASE) =====
@@ -1318,7 +1349,9 @@
       
       try {
         await casosRef.doc(id).set(novoCaso);
+        console.log('✅ Paciente criado:', id);
         currentPatient = novoCaso;
+        // O listener do Firebase vai atualizar a sidebar automaticamente
         showPanel('2');
       } catch (error) {
         console.error('Erro ao criar caso:', error);
