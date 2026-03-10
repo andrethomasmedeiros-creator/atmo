@@ -26,6 +26,91 @@
       --accent-teal-glow: rgba(0, 180, 170, 0.2);
     }
 
+    /* ===== TELA DE LOGIN ===== */
+    .login-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .login-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    
+    .login-box h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: var(--accent-teal);
+    }
+    
+    .login-box p {
+      color: var(--text-secondary);
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    
+    .login-box input {
+      width: 100%;
+      padding: 15px 20px;
+      font-size: 18px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      text-align: center;
+      letter-spacing: 3px;
+      margin-bottom: 20px;
+    }
+    
+    .login-box input:focus {
+      outline: none;
+      border-color: var(--accent-teal);
+      box-shadow: 0 0 20px var(--accent-teal-glow);
+    }
+    
+    .login-box button {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      background: var(--accent-teal);
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .login-box button:hover {
+      background: #00c8bb;
+      transform: scale(1.02);
+    }
+    
+    .login-error {
+      color: var(--accent-red);
+      font-size: 14px;
+      margin-top: 15px;
+      display: none;
+    }
+    
+    .login-hidden {
+      display: none !important;
+    }
+
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
       background: var(--bg-primary);
@@ -463,6 +548,17 @@
 </head>
 <body>
 
+  <!-- TELA DE LOGIN -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+      <h1>🔐 CENTRO CIRÚRGICO</h1>
+      <p>Hospital Regional Vale do Jaguaribe<br>Acesso restrito - Digite a senha</p>
+      <input type="password" id="loginSenha" placeholder="••••••••" onkeypress="if(event.key==='Enter') verificarLogin()">
+      <button onclick="verificarLogin()">ENTRAR</button>
+      <div class="login-error" id="loginError">❌ Senha incorreta</div>
+    </div>
+  </div>
+
   <!-- HEADER -->
   <header class="header">
     <div class="header-logos">
@@ -884,8 +980,44 @@
       }
     }
 
+    // ===== SISTEMA DE LOGIN =====
+    const SENHA_SISTEMA = 'HRVJ2026';
+    const CHAVE_SESSAO = 'ptm_autenticado';
+    
+    function verificarLogin() {
+      const senhaDigitada = document.getElementById('loginSenha').value;
+      const errorEl = document.getElementById('loginError');
+      
+      if (senhaDigitada === SENHA_SISTEMA) {
+        const expiracao = Date.now() + (24 * 60 * 60 * 1000);
+        localStorage.setItem(CHAVE_SESSAO, expiracao.toString());
+        document.getElementById('loginOverlay').classList.add('login-hidden');
+        iniciarSistema();
+      } else {
+        errorEl.style.display = 'block';
+        document.getElementById('loginSenha').value = '';
+        document.getElementById('loginSenha').focus();
+        setTimeout(() => { errorEl.style.display = 'none'; }, 3000);
+      }
+    }
+    
+    function verificarSessao() {
+      const sessao = localStorage.getItem(CHAVE_SESSAO);
+      if (sessao && parseInt(sessao) > Date.now()) {
+        document.getElementById('loginOverlay').classList.add('login-hidden');
+        iniciarSistema();
+      } else {
+        localStorage.removeItem(CHAVE_SESSAO);
+        document.getElementById('loginSenha').focus();
+      }
+    }
+    
+    function iniciarSistema() {
+      escutarCasos();
+    }
+
     // ===== INIT =====
-    escutarCasos();
+    verificarSessao();
   </script>
 
 </body>
