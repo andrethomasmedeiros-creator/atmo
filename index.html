@@ -812,8 +812,8 @@
     <div class="login-box">
       <h1>🔐 PTM SALA VERMELHA</h1>
       <p>Hospital Regional Vale do Jaguaribe<br>Acesso restrito - Digite a senha</p>
-      <input type="password" id="loginSenha" placeholder="••••••••">
-      <button id="btnLogin">ENTRAR</button>
+      <input type="password" id="loginSenha" placeholder="••••••••" onkeypress="if(event.key==='Enter' && typeof verificarLogin === 'function') verificarLogin()">
+      <button onclick="if(typeof verificarLogin === 'function') verificarLogin()">ENTRAR</button>
       <div class="login-error" id="loginError">❌ Senha incorreta</div>
     </div>
   </div>
@@ -835,14 +835,14 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <button class="btn-novo-paciente" id="btnNovoPaciente">
+        <button class="btn-novo-paciente" onclick="novoPaciente()">
           <span style="font-size: 20px;">➕</span>
           NOVO PACIENTE
         </button>
-        <button id="btnAtivarAudio" style="width: 100%; margin-top: 10px; padding: 12px; background: var(--accent-orange); border: none; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; font-weight: 700;">
+        <button id="btnAtivarAudio" onclick="ativarAudio()" style="width: 100%; margin-top: 10px; padding: 12px; background: var(--accent-orange); border: none; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; font-weight: 700;">
           🔇 CLIQUE PARA ATIVAR ÁUDIO
         </button>
-        <button class="btn-limpar" id="btnLimpar" style="width: 100%; margin-top: 10px; padding: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 12px; cursor: pointer;">
+        <button class="btn-limpar" onclick="forcarLimpeza()" style="width: 100%; margin-top: 10px; padding: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 12px; cursor: pointer;">
           🧹 FORÇAR LIMPEZA DE TELA
         </button>
       </div>
@@ -856,27 +856,27 @@
       
       <!-- STEPPER / TIMELINE -->
       <div class="stepper" id="stepper">
-        <div class="step completed" data-step="1" style="cursor: pointer;">
+        <div class="step completed" data-step="1" onclick="navegarParaEtapa(1)" style="cursor: pointer;">
           <div class="step-icon">📋</div>
           <div class="step-label">Identificação</div>
         </div>
         <div class="step-connector completed"></div>
-        <div class="step active" data-step="2" style="cursor: pointer;">
+        <div class="step active" data-step="2" onclick="navegarParaEtapa(2)" style="cursor: pointer;">
           <div class="step-icon">🔬</div>
           <div class="step-label">Critérios Clínicos</div>
         </div>
         <div class="step-connector"></div>
-        <div class="step" data-step="3" style="cursor: pointer;">
+        <div class="step" data-step="3" onclick="navegarParaEtapa(3)" style="cursor: pointer;">
           <div class="step-icon">👨‍⚕️</div>
           <div class="step-label">Especialista</div>
         </div>
         <div class="step-connector"></div>
-        <div class="step" data-step="4" style="cursor: pointer;">
+        <div class="step" data-step="4" onclick="navegarParaEtapa(4)" style="cursor: pointer;">
           <div class="step-icon">🚨</div>
           <div class="step-label">Onda Vermelha</div>
         </div>
         <div class="step-connector"></div>
-        <div class="step" data-step="5" style="cursor: pointer;">
+        <div class="step" data-step="5" onclick="navegarParaEtapa(5)" style="cursor: pointer;">
           <div class="step-icon">🏁</div>
           <div class="step-label">Desfecho</div>
         </div>
@@ -1409,6 +1409,8 @@
   <script src="firebase-config.js"></script>
 
   <script>
+    console.log('🚀 Iniciando script PTM...');
+    
     // ===== ESTADO GLOBAL =====
     let currentPatient = null;
     let patients = [];
@@ -2598,27 +2600,10 @@
     }
 
     // ===== INIT =====
-    // Adicionar event listeners para login
-    document.getElementById('btnLogin').addEventListener('click', verificarLogin);
-    document.getElementById('loginSenha').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') verificarLogin();
-    });
-    
-    // Event listeners para botões da sidebar
-    document.getElementById('btnNovoPaciente').addEventListener('click', novoPaciente);
-    document.getElementById('btnAtivarAudio').addEventListener('click', ativarAudio);
-    document.getElementById('btnLimpar').addEventListener('click', forcarLimpeza);
-    
-    // Event listeners para navegação no stepper
-    document.querySelectorAll('.step[data-step]').forEach(step => {
-      step.addEventListener('click', function() {
-        const etapa = parseInt(this.getAttribute('data-step'));
-        navegarParaEtapa(etapa);
-      });
-    });
-    
+    console.log('🔧 Executando INIT...');
     // Verificar sessão ao carregar
     verificarSessao();
+    console.log('✅ Script carregado completamente!');
   </script>
 
 </body>
