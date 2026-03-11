@@ -751,13 +751,12 @@
                 <div class="patient-avatar">${(c.ident || 'P')[0].toUpperCase()}</div>
                 <div class="patient-info">
                   <h3>${c.ident || 'NÃO IDENTIFICADO'}</h3>
-                  <span>${c.sexo || '-'} • ${c.idade || '-'} anos</span>
+                  <span>${c.sexo || '-'} • ${c.faixaEtaria || c.idade || '-'}</span>
                 </div>
                 <div class="case-id">${c.id}</div>
               </div>
               
               <div class="timer-section">
-                <div class="timer-label">${reconhecido ? 'Tempo de Preparo' : 'Aguardando Reconhecimento'}</div>
                 <div class="timer-value ${!reconhecido ? 'waiting' : ''}" data-start="${reconhecido && c.ccAckTime ? (c.ccAckTime.toMillis ? c.ccAckTime.toMillis() : c.ccAckTime) : ''}">
                   ${reconhecido ? '--:--' : '⏳'}
                 </div>
@@ -766,28 +765,34 @@
               <div class="info-grid">
                 <div class="info-item">
                   <div class="label">Especialidade</div>
-                  <div class="value">${(c.especialidades || []).join(', ') || '-'}</div>
-                </div>
-                <div class="info-item">
-                  <div class="label">Critérios</div>
-                  <div class="value">${(c.criterios || []).slice(0, 2).join(' + ') || '-'}</div>
+                  <div class="value">${(c.especialidades || []).join(' • ') || '-'}</div>
                 </div>
                 <div class="info-item">
                   <div class="label">Transporte</div>
-                  <div class="value">${c.transpEnd ? '✅ CHEGOU' : (c.transpTime ? '🚑 EM ANDAMENTO' : '⏳ AGUARDANDO')}</div>
+                  <div class="value">${c.transpSaidaSalaTime ? '🚑 A CAMINHO' : (c.transpChegouTime ? '🛏️ MACA NA SALA' : '⏳ AGUARDANDO')}</div>
+                </div>
+                <div class="info-item">
+                  <div class="label">Auditoria</div>
+                  <div class="value">${c.dadosAuditoriaPreenchidos || c.prontuario ? '✅ PREENCHIDO' : '⏳ PENDENTE'}</div>
                 </div>
               </div>
               
               <div class="action-buttons">
                 ${!reconhecido ? `
                   <button class="btn btn-reconhecer" onclick="reconhecer('${c.id}')">
-                    🔊 RECONHECER E PREPARAR SALA
+                    ✅ CONFIRMAR CIÊNCIA
                   </button>
                 ` : `
-                  <button class="btn btn-done" disabled>✅ RECONHECIDO</button>
-                  <button class="btn btn-encerrar" onclick="encerrar('${c.id}')">
-                    🏁 PACIENTE NA MESA (ENCERRAR)
-                  </button>
+                  <button class="btn btn-done" disabled>✅ CIENTE</button>
+                  ${c.dadosAuditoriaPreenchidos || c.prontuario ? `
+                    <button class="btn btn-encerrar" onclick="encerrar('${c.id}')">
+                      🏁 PACIENTE NA MESA
+                    </button>
+                  ` : `
+                    <button class="btn btn-encerrar" disabled style="opacity: 0.5;" title="Aguardando preenchimento do prontuário pela Sala Vermelha">
+                      ⏳ AGUARDANDO AUDITORIA
+                    </button>
+                  `}
                 `}
               </div>
             </div>
@@ -946,21 +951,39 @@
     }
 
     async function encerrar(id) {
-      if (!confirm('Confirma que o paciente está na mesa cirúrgica?\n\nIsso encerrará o protocolo PTM.')) {
-        return;
-      }
-      
       try {
-        // Buscar dados completos do caso
+        // Buscar dados completos do caso primeiro
         const casoDoc = await casosRef.doc(id).get();
         const casoData = casoDoc.data();
         
+        // Verificar se prontuário foi preenchido
+        if (!casoData.dadosAuditoriaPreenchidos && !casoData.prontuario) {
+          alert('⚠️ ATENÇÃO!\n\nO prontuário ainda não foi preenchido pela Sala Vermelha.\n\nAguarde o preenchimento dos dados de auditoria antes de encerrar o protocolo.');
+          return;
+        }
+        
+        if (!confirm('Confirma que o paciente está na mesa cirúrgica?\n\nIsso encerrará o protocolo PTM.')) {
+          return;
+        }
+        
         const ccFinalizadoTime = agora();
+        
+        // Calcular tempo saída sala -> chegada CC se disponível
+        let tempoSaidaChegadaCC = '';
+        if (casoData.transpSaidaSalaTime) {
+          const saidaMs = casoData.transpSaidaSalaTime.toMillis ? casoData.transpSaidaSalaTime.toMillis() : casoData.transpSaidaSalaTime;
+          const chegadaMs = Date.now();
+          const diffSecs = Math.floor((chegadaMs - saidaMs) / 1000);
+          const mins = Math.floor(diffSecs / 60);
+          const secs = diffSecs % 60;
+          tempoSaidaChegadaCC = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
         
         await casosRef.doc(id).update({
           status: 'FINALIZADO',
           ccFinalizado: true,
           ccFinalizadoTime: ccFinalizadoTime,
+          tempoSaidaChegadaCC: tempoSaidaChegadaCC,
           statusNac: 'ENCERRADO NO CENTRO CIRÚRGICO'
         });
         
