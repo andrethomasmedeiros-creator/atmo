@@ -611,11 +611,46 @@
     <div class="login-box">
       <h1>🔐 CENTRAL NAC</h1>
       <p>Hospital Regional Vale do Jaguaribe<br>Acesso restrito - Digite a senha</p>
-      <input type="password" id="loginSenha" placeholder="••••••••" onkeypress="if(event.key==='Enter') verificarLogin()">
-      <button onclick="verificarLogin()">ENTRAR</button>
+      <input type="password" id="loginSenha" placeholder="••••••••">
+      <button id="btnLogin">ENTRAR</button>
       <div class="login-error" id="loginError">❌ Senha incorreta</div>
     </div>
   </div>
+  <script>
+    // Login inline para evitar erro de função não definida
+    const SENHA_SISTEMA = 'HRVJ2026';
+    const CHAVE_SESSAO = 'ptm_autenticado_nac';
+    
+    function verificarLogin() {
+      const senhaDigitada = document.getElementById('loginSenha').value;
+      const errorEl = document.getElementById('loginError');
+      
+      if (senhaDigitada === SENHA_SISTEMA) {
+        const expiracao = Date.now() + (24 * 60 * 60 * 1000);
+        localStorage.setItem(CHAVE_SESSAO, expiracao.toString());
+        document.getElementById('loginOverlay').classList.add('login-hidden');
+        if (typeof iniciarSistema === 'function') iniciarSistema();
+      } else {
+        errorEl.style.display = 'block';
+        document.getElementById('loginSenha').value = '';
+        document.getElementById('loginSenha').focus();
+        setTimeout(() => { errorEl.style.display = 'none'; }, 3000);
+      }
+    }
+    
+    document.getElementById('btnLogin').addEventListener('click', verificarLogin);
+    document.getElementById('loginSenha').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') verificarLogin();
+    });
+    
+    // Verificar sessão existente
+    (function() {
+      const sessao = localStorage.getItem(CHAVE_SESSAO);
+      if (sessao && parseInt(sessao) > Date.now()) {
+        document.getElementById('loginOverlay').classList.add('login-hidden');
+      }
+    })();
+  </script>
 
   <!-- HEADER -->
   <header class="header">
@@ -928,15 +963,13 @@
       
       const agora_str = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       const especialidades = (caso.especialidades || []).join(', ') || 'Não definido';
-      const criterios = (caso.criterios || []).join(', ') || 'Não informado';
       const ondaStatus = caso.onda === 'SIM' ? '🚨 *ONDA VERMELHA ATIVADA*' : '';
       
       const mensagem = `🚨 *PTM ATIVADO - HRVJ*
 
 📍 *Local:* ${caso.ident || 'Não informado'}
-👤 *Paciente:* ${caso.sexo || 'N/I'}, ${caso.faixaEtaria || caso.idade || 'N/I'}
+👤 *Paciente:* ${caso.sexo || 'N/I'}, ${caso.idade || 'N/I'} anos
 🩺 *Especialidades:* ${especialidades}
-📋 *Critérios:* ${criterios}
 ⏰ *Hora:* ${agora_str}
 🆔 *ID:* ${caso.id}
 ${ondaStatus}
@@ -947,59 +980,18 @@ ${ondaStatus}
       const url = `https://wa.me/?text=${mensagemCodificada}`;
       window.open(url, '_blank');
     }
-```
 
----
-
-**Cole isso no `nac.html`** substituindo a função `enviarWhatsApp` existente (procure por `// ===== WHATSAPP =====`).
-
-A mensagem agora vai incluir:
-```
-📋 *Critérios:* PAF / FAB / TRAUMA PENETRANTE, FAST POSITIVO, etc.
-      
-      const mensagemCodificada = encodeURIComponent(mensagem);
-      const url = `https://wa.me/?text=${mensagemCodificada}`;
-      window.open(url, '_blank');
-    }
-
-    // ===== SISTEMA DE LOGIN =====
-    const SENHA_SISTEMA = 'HRVJ2026';
-    const CHAVE_SESSAO = 'ptm_autenticado';
-    
-    function verificarLogin() {
-      const senhaDigitada = document.getElementById('loginSenha').value;
-      const errorEl = document.getElementById('loginError');
-      
-      if (senhaDigitada === SENHA_SISTEMA) {
-        const expiracao = Date.now() + (24 * 60 * 60 * 1000);
-        localStorage.setItem(CHAVE_SESSAO, expiracao.toString());
-        document.getElementById('loginOverlay').classList.add('login-hidden');
-        iniciarSistema();
-      } else {
-        errorEl.style.display = 'block';
-        document.getElementById('loginSenha').value = '';
-        document.getElementById('loginSenha').focus();
-        setTimeout(() => { errorEl.style.display = 'none'; }, 3000);
-      }
-    }
-    
-    function verificarSessao() {
-      const sessao = localStorage.getItem(CHAVE_SESSAO);
-      if (sessao && parseInt(sessao) > Date.now()) {
-        document.getElementById('loginOverlay').classList.add('login-hidden');
-        iniciarSistema();
-      } else {
-        localStorage.removeItem(CHAVE_SESSAO);
-        document.getElementById('loginSenha').focus();
-      }
-    }
-    
+    // ===== FUNÇÕES DE SISTEMA =====
     function iniciarSistema() {
       escutarCasos();
     }
 
     // ===== INIT =====
-    verificarSessao();
+    // Verificar se já está logado e iniciar
+    const sessaoExistente = localStorage.getItem('ptm_autenticado_nac');
+    if (sessaoExistente && parseInt(sessaoExistente) > Date.now()) {
+      iniciarSistema();
+    }
   </script>
 
 </body>
