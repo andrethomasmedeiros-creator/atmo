@@ -812,11 +812,46 @@
     <div class="login-box">
       <h1>🔐 PTM SALA VERMELHA</h1>
       <p>Hospital Regional Vale do Jaguaribe<br>Acesso restrito - Digite a senha</p>
-      <input type="password" id="loginSenha" placeholder="••••••••" onkeypress="if(event.key==='Enter') verificarLogin()">
-      <button onclick="verificarLogin()">ENTRAR</button>
+      <input type="password" id="loginSenha" placeholder="••••••••">
+      <button id="btnLogin">ENTRAR</button>
       <div class="login-error" id="loginError">❌ Senha incorreta</div>
     </div>
   </div>
+  <script>
+    // Login inline para evitar erro de função não definida
+    const SENHA_SISTEMA = 'HRVJ2026';
+    const CHAVE_SESSAO = 'ptm_autenticado_sala';
+    
+    function verificarLogin() {
+      const senhaDigitada = document.getElementById('loginSenha').value;
+      const errorEl = document.getElementById('loginError');
+      
+      if (senhaDigitada === SENHA_SISTEMA) {
+        const expiracao = Date.now() + (24 * 60 * 60 * 1000);
+        localStorage.setItem(CHAVE_SESSAO, expiracao.toString());
+        document.getElementById('loginOverlay').classList.add('login-hidden');
+        if (typeof iniciarSistema === 'function') iniciarSistema();
+      } else {
+        errorEl.style.display = 'block';
+        document.getElementById('loginSenha').value = '';
+        document.getElementById('loginSenha').focus();
+        setTimeout(() => { errorEl.style.display = 'none'; }, 3000);
+      }
+    }
+    
+    document.getElementById('btnLogin').addEventListener('click', verificarLogin);
+    document.getElementById('loginSenha').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') verificarLogin();
+    });
+    
+    // Verificar sessão existente
+    (function() {
+      const sessao = localStorage.getItem(CHAVE_SESSAO);
+      if (sessao && parseInt(sessao) > Date.now()) {
+        document.getElementById('loginOverlay').classList.add('login-hidden');
+      }
+    })();
+  </script>
 
   <!-- HEADER COM LOGOS -->
   <header class="header">
@@ -2560,55 +2595,18 @@
       return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
 
-    // ===== SISTEMA DE LOGIN =====
-    const SENHA_SISTEMA = 'HRVJ2026';
-    const CHAVE_SESSAO = 'ptm_autenticado';
-    
-    function verificarLogin() {
-      const senhaDigitada = document.getElementById('loginSenha').value;
-      const errorEl = document.getElementById('loginError');
-      
-      if (senhaDigitada === SENHA_SISTEMA) {
-        // Salvar sessão (válida por 24 horas)
-        const expiracao = Date.now() + (24 * 60 * 60 * 1000);
-        localStorage.setItem(CHAVE_SESSAO, expiracao.toString());
-        
-        // Esconder tela de login
-        document.getElementById('loginOverlay').classList.add('login-hidden');
-        
-        // Iniciar sistema
-        iniciarSistema();
-      } else {
-        errorEl.style.display = 'block';
-        document.getElementById('loginSenha').value = '';
-        document.getElementById('loginSenha').focus();
-        
-        // Esconder erro após 3 segundos
-        setTimeout(() => { errorEl.style.display = 'none'; }, 3000);
-      }
-    }
-    
-    function verificarSessao() {
-      const sessao = localStorage.getItem(CHAVE_SESSAO);
-      
-      if (sessao && parseInt(sessao) > Date.now()) {
-        // Sessão válida - esconder login e iniciar
-        document.getElementById('loginOverlay').classList.add('login-hidden');
-        iniciarSistema();
-      } else {
-        // Sessão inválida ou expirada - mostrar login
-        localStorage.removeItem(CHAVE_SESSAO);
-        document.getElementById('loginSenha').focus();
-      }
-    }
-    
+    // ===== FUNÇÕES DE SISTEMA =====
     function iniciarSistema() {
       showPanel('empty');
       escutarCasos();
     }
 
     // ===== INIT =====
-    verificarSessao();
+    // Verificar se já está logado e iniciar
+    const sessaoExistente = localStorage.getItem('ptm_autenticado_sala');
+    if (sessaoExistente && parseInt(sessaoExistente) > Date.now()) {
+      iniciarSistema();
+    }
   </script>
 
 </body>
