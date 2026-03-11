@@ -928,18 +928,34 @@
       
       const agora_str = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       const especialidades = (caso.especialidades || []).join(', ') || 'Não definido';
+      const criterios = (caso.criterios || []).join(', ') || 'Não informado';
       const ondaStatus = caso.onda === 'SIM' ? '🚨 *ONDA VERMELHA ATIVADA*' : '';
       
       const mensagem = `🚨 *PTM ATIVADO - HRVJ*
 
 📍 *Local:* ${caso.ident || 'Não informado'}
-👤 *Paciente:* ${caso.sexo || 'N/I'}, ${caso.idade || 'N/I'} anos
+👤 *Paciente:* ${caso.sexo || 'N/I'}, ${caso.faixaEtaria || caso.idade || 'N/I'}
 🩺 *Especialidades:* ${especialidades}
+📋 *Critérios:* ${criterios}
 ⏰ *Hora:* ${agora_str}
 🆔 *ID:* ${caso.id}
 ${ondaStatus}
 
 ⚠️ Favor comparecer à Sala Vermelha com urgência!`;
+      
+      const mensagemCodificada = encodeURIComponent(mensagem);
+      const url = `https://wa.me/?text=${mensagemCodificada}`;
+      window.open(url, '_blank');
+    }
+```
+
+---
+
+**Cole isso no `nac.html`** substituindo a função `enviarWhatsApp` existente (procure por `// ===== WHATSAPP =====`).
+
+A mensagem agora vai incluir:
+```
+📋 *Critérios:* PAF / FAB / TRAUMA PENETRANTE, FAST POSITIVO, etc.
       
       const mensagemCodificada = encodeURIComponent(mensagem);
       const url = `https://wa.me/?text=${mensagemCodificada}`;
