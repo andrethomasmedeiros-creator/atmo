@@ -2250,12 +2250,47 @@
         }
       }
       
-      if (p.transpTime) {
-        document.getElementById('btnTranspStart').style.display = 'none';
-        document.getElementById('btnTranspEnd').style.display = 'block';
-      } else {
-        document.getElementById('btnTranspStart').style.display = 'block';
-        document.getElementById('btnTranspEnd').style.display = 'none';
+      // Restaurar estado do transporte (novo sistema de 4 etapas)
+      if (p.currentPanel === '5a') {
+        // Resetar todas as etapas primeiro
+        const etapa1 = document.getElementById('etapaTransp1');
+        const etapa2 = document.getElementById('etapaTransp2');
+        const etapa3 = document.getElementById('etapaTransp3');
+        const etapa4 = document.getElementById('etapaTransp4');
+        
+        if (etapa1) etapa1.style.display = 'none';
+        if (etapa2) etapa2.style.display = 'none';
+        if (etapa3) etapa3.style.display = 'none';
+        if (etapa4) etapa4.style.display = 'none';
+        
+        if (p.transpSaidaSalaTime) {
+          // Etapa 4: Aguardando chegada no CC
+          if (etapa4) etapa4.style.display = 'block';
+          if (p.tempoAcionamentoChegadaMaca) {
+            const el = document.getElementById('timerTranspChegadaFinal2');
+            if (el) el.textContent = p.tempoAcionamentoChegadaMaca;
+          }
+          // Reiniciar timer de saída -> CC
+          const saidaMs = p.transpSaidaSalaTime.toMillis ? p.transpSaidaSalaTime.toMillis() : p.transpSaidaSalaTime;
+          startTimer('timerTranspCCAtivo2', saidaMs);
+        } else if (p.transpChegouTime) {
+          // Etapa 3: Maca chegou, preparando paciente
+          if (etapa3) etapa3.style.display = 'block';
+          if (p.tempoAcionamentoChegadaMaca) {
+            const el = document.getElementById('timerTranspChegadaFinal');
+            if (el) el.textContent = p.tempoAcionamentoChegadaMaca;
+          }
+        } else if (p.transpAcionadoTime) {
+          // Etapa 2: Transporte acionado, aguardando maca
+          if (etapa2) etapa2.style.display = 'block';
+          const acionadoMs = p.transpAcionadoTime.toMillis ? p.transpAcionadoTime.toMillis() : p.transpAcionadoTime;
+          startTimer('timerTranspChegada', acionadoMs);
+        } else {
+          // Etapa 1: Aguardando acionar transporte
+          if (etapa1) etapa1.style.display = 'block';
+          const ondaMs = p.ondaTime ? (p.ondaTime.toMillis ? p.ondaTime.toMillis() : p.ondaTime) : Date.now();
+          startTimer('timerAguardandoTransp', ondaMs);
+        }
       }
       
       // Restaurar estado do painel 5b (hemotransfusão)
@@ -2302,6 +2337,10 @@
         document.getElementById('inpIdent').value = '';
         document.getElementById('inpSexo').value = '';
         document.getElementById('inpIdade').value = '';
+        const faixaEl = document.getElementById('inpFaixaEtaria');
+        if (faixaEl) faixaEl.value = '';
+        const racaEl = document.getElementById('inpRaca');
+        if (racaEl) racaEl.value = '';
         document.getElementById('inpProntuario').value = '';
         document.getElementById('inpNome').value = '';
         document.getElementById('inpNasc').value = '';
@@ -2314,8 +2353,32 @@
           btnEsp.textContent = '👨‍⚕️ ESPECIALISTA CHEGOU NA SALA';
           btnEsp.disabled = false;
         }
-        document.getElementById('btnTranspStart').style.display = 'block';
-        document.getElementById('btnTranspEnd').style.display = 'none';
+        
+        // Resetar etapas de transporte
+        const etapa1 = document.getElementById('etapaTransp1');
+        const etapa2 = document.getElementById('etapaTransp2');
+        const etapa3 = document.getElementById('etapaTransp3');
+        const etapa4 = document.getElementById('etapaTransp4');
+        if (etapa1) etapa1.style.display = 'block';
+        if (etapa2) etapa2.style.display = 'none';
+        if (etapa3) etapa3.style.display = 'none';
+        if (etapa4) etapa4.style.display = 'none';
+        
+        // Resetar etapas de hemotransfusão
+        const etapa5b1 = document.getElementById('etapa5b-1');
+        const etapa5b2 = document.getElementById('etapa5b-2');
+        const etapa5b3 = document.getElementById('etapa5b-3');
+        if (etapa5b1) etapa5b1.style.display = 'block';
+        if (etapa5b2) etapa5b2.style.display = 'none';
+        if (etapa5b3) etapa5b3.style.display = 'none';
+        
+        // Resetar quantidades hemoderivados
+        ['Hemacias', 'Plasma', 'Plaquetas', 'Crio'].forEach(tipo => {
+          const input = document.getElementById(`qtd${tipo}`);
+          const display = document.getElementById(`qtd${tipo}Display`);
+          if (input) input.value = '0';
+          if (display) display.textContent = '0';
+        });
         
         // Parar timers
         Object.keys(timers).forEach(stopTimer);
