@@ -817,41 +817,6 @@
       <div class="login-error" id="loginError">❌ Senha incorreta</div>
     </div>
   </div>
-  <script>
-    // Login inline para evitar erro de função não definida
-    const SENHA_SISTEMA = 'HRVJ2026';
-    const CHAVE_SESSAO = 'ptm_autenticado_sala';
-    
-    function verificarLogin() {
-      const senhaDigitada = document.getElementById('loginSenha').value;
-      const errorEl = document.getElementById('loginError');
-      
-      if (senhaDigitada === SENHA_SISTEMA) {
-        const expiracao = Date.now() + (24 * 60 * 60 * 1000);
-        localStorage.setItem(CHAVE_SESSAO, expiracao.toString());
-        document.getElementById('loginOverlay').classList.add('login-hidden');
-        if (typeof iniciarSistema === 'function') iniciarSistema();
-      } else {
-        errorEl.style.display = 'block';
-        document.getElementById('loginSenha').value = '';
-        document.getElementById('loginSenha').focus();
-        setTimeout(() => { errorEl.style.display = 'none'; }, 3000);
-      }
-    }
-    
-    document.getElementById('btnLogin').addEventListener('click', verificarLogin);
-    document.getElementById('loginSenha').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') verificarLogin();
-    });
-    
-    // Verificar sessão existente
-    (function() {
-      const sessao = localStorage.getItem(CHAVE_SESSAO);
-      if (sessao && parseInt(sessao) > Date.now()) {
-        document.getElementById('loginOverlay').classList.add('login-hidden');
-      }
-    })();
-  </script>
 
   <!-- HEADER COM LOGOS -->
   <header class="header">
@@ -870,14 +835,14 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <button class="btn-novo-paciente" onclick="novoPaciente()">
+        <button class="btn-novo-paciente" id="btnNovoPaciente">
           <span style="font-size: 20px;">➕</span>
           NOVO PACIENTE
         </button>
-        <button id="btnAtivarAudio" onclick="ativarAudio()" style="width: 100%; margin-top: 10px; padding: 12px; background: var(--accent-orange); border: none; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; font-weight: 700;">
+        <button id="btnAtivarAudio" style="width: 100%; margin-top: 10px; padding: 12px; background: var(--accent-orange); border: none; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; font-weight: 700;">
           🔇 CLIQUE PARA ATIVAR ÁUDIO
         </button>
-        <button class="btn-limpar" onclick="forcarLimpeza()" style="width: 100%; margin-top: 10px; padding: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 12px; cursor: pointer;">
+        <button class="btn-limpar" id="btnLimpar" style="width: 100%; margin-top: 10px; padding: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 12px; cursor: pointer;">
           🧹 FORÇAR LIMPEZA DE TELA
         </button>
       </div>
@@ -891,27 +856,27 @@
       
       <!-- STEPPER / TIMELINE -->
       <div class="stepper" id="stepper">
-        <div class="step completed" data-step="1" onclick="navegarParaEtapa(1)" style="cursor: pointer;">
+        <div class="step completed" data-step="1" style="cursor: pointer;">
           <div class="step-icon">📋</div>
           <div class="step-label">Identificação</div>
         </div>
         <div class="step-connector completed"></div>
-        <div class="step active" data-step="2" onclick="navegarParaEtapa(2)" style="cursor: pointer;">
+        <div class="step active" data-step="2" style="cursor: pointer;">
           <div class="step-icon">🔬</div>
           <div class="step-label">Critérios Clínicos</div>
         </div>
         <div class="step-connector"></div>
-        <div class="step" data-step="3" onclick="navegarParaEtapa(3)" style="cursor: pointer;">
+        <div class="step" data-step="3" style="cursor: pointer;">
           <div class="step-icon">👨‍⚕️</div>
           <div class="step-label">Especialista</div>
         </div>
         <div class="step-connector"></div>
-        <div class="step" data-step="4" onclick="navegarParaEtapa(4)" style="cursor: pointer;">
+        <div class="step" data-step="4" style="cursor: pointer;">
           <div class="step-icon">🚨</div>
           <div class="step-label">Onda Vermelha</div>
         </div>
         <div class="step-connector"></div>
-        <div class="step" data-step="5" onclick="navegarParaEtapa(5)" style="cursor: pointer;">
+        <div class="step" data-step="5" style="cursor: pointer;">
           <div class="step-icon">🏁</div>
           <div class="step-label">Desfecho</div>
         </div>
@@ -2595,18 +2560,65 @@
       return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
 
-    // ===== FUNÇÕES DE SISTEMA =====
+    // ===== SISTEMA DE LOGIN =====
+    const SENHA_SISTEMA = 'HRVJ2026';
+    const CHAVE_SESSAO = 'ptm_autenticado_sala';
+    
+    function verificarLogin() {
+      const senhaDigitada = document.getElementById('loginSenha').value;
+      const errorEl = document.getElementById('loginError');
+      
+      if (senhaDigitada === SENHA_SISTEMA) {
+        const expiracao = Date.now() + (24 * 60 * 60 * 1000);
+        localStorage.setItem(CHAVE_SESSAO, expiracao.toString());
+        document.getElementById('loginOverlay').classList.add('login-hidden');
+        iniciarSistema();
+      } else {
+        errorEl.style.display = 'block';
+        document.getElementById('loginSenha').value = '';
+        document.getElementById('loginSenha').focus();
+        setTimeout(() => { errorEl.style.display = 'none'; }, 3000);
+      }
+    }
+    
+    function verificarSessao() {
+      const sessao = localStorage.getItem(CHAVE_SESSAO);
+      if (sessao && parseInt(sessao) > Date.now()) {
+        document.getElementById('loginOverlay').classList.add('login-hidden');
+        iniciarSistema();
+      } else {
+        localStorage.removeItem(CHAVE_SESSAO);
+        document.getElementById('loginSenha').focus();
+      }
+    }
+
     function iniciarSistema() {
       showPanel('empty');
       escutarCasos();
     }
 
     // ===== INIT =====
-    // Verificar se já está logado e iniciar
-    const sessaoExistente = localStorage.getItem('ptm_autenticado_sala');
-    if (sessaoExistente && parseInt(sessaoExistente) > Date.now()) {
-      iniciarSistema();
-    }
+    // Adicionar event listeners para login
+    document.getElementById('btnLogin').addEventListener('click', verificarLogin);
+    document.getElementById('loginSenha').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') verificarLogin();
+    });
+    
+    // Event listeners para botões da sidebar
+    document.getElementById('btnNovoPaciente').addEventListener('click', novoPaciente);
+    document.getElementById('btnAtivarAudio').addEventListener('click', ativarAudio);
+    document.getElementById('btnLimpar').addEventListener('click', forcarLimpeza);
+    
+    // Event listeners para navegação no stepper
+    document.querySelectorAll('.step[data-step]').forEach(step => {
+      step.addEventListener('click', function() {
+        const etapa = parseInt(this.getAttribute('data-step'));
+        navegarParaEtapa(etapa);
+      });
+    });
+    
+    // Verificar sessão ao carregar
+    verificarSessao();
   </script>
 
 </body>
