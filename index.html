@@ -839,6 +839,9 @@
           <span style="font-size: 20px;">➕</span>
           NOVO PACIENTE
         </button>
+        <button id="btnAtivarAudio" onclick="ativarAudio()" style="width: 100%; margin-top: 10px; padding: 12px; background: var(--accent-orange); border: none; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; font-weight: 700;">
+          🔇 CLIQUE PARA ATIVAR ÁUDIO
+        </button>
         <button class="btn-limpar" onclick="forcarLimpeza()" style="width: 100%; margin-top: 10px; padding: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 12px; cursor: pointer;">
           🧹 FORÇAR LIMPEZA DE TELA
         </button>
@@ -853,27 +856,27 @@
       
       <!-- STEPPER / TIMELINE -->
       <div class="stepper" id="stepper">
-        <div class="step completed" data-step="1">
+        <div class="step completed" data-step="1" onclick="navegarParaEtapa(1)" style="cursor: pointer;">
           <div class="step-icon">📋</div>
           <div class="step-label">Identificação</div>
         </div>
         <div class="step-connector completed"></div>
-        <div class="step active" data-step="2">
+        <div class="step active" data-step="2" onclick="navegarParaEtapa(2)" style="cursor: pointer;">
           <div class="step-icon">🔬</div>
           <div class="step-label">Critérios Clínicos</div>
         </div>
         <div class="step-connector"></div>
-        <div class="step" data-step="3">
+        <div class="step" data-step="3" onclick="navegarParaEtapa(3)" style="cursor: pointer;">
           <div class="step-icon">👨‍⚕️</div>
           <div class="step-label">Especialista</div>
         </div>
         <div class="step-connector"></div>
-        <div class="step" data-step="4">
+        <div class="step" data-step="4" onclick="navegarParaEtapa(4)" style="cursor: pointer;">
           <div class="step-icon">🚨</div>
           <div class="step-label">Onda Vermelha</div>
         </div>
         <div class="step-connector"></div>
-        <div class="step" data-step="5">
+        <div class="step" data-step="5" onclick="navegarParaEtapa(5)" style="cursor: pointer;">
           <div class="step-icon">🏁</div>
           <div class="step-label">Desfecho</div>
         </div>
@@ -1485,6 +1488,124 @@
       });
     }
 
+    // ===== NAVEGAÇÃO ENTRE ETAPAS =====
+    function navegarParaEtapa(etapa) {
+      if (!currentPatient) {
+        alert('Selecione um paciente primeiro!');
+        return;
+      }
+      
+      // Mapear etapa do stepper para painel
+      const painelMap = {
+        1: '1',  // Identificação (não permite voltar)
+        2: '2',  // Critérios
+        3: '3',  // Especialista
+        4: '4',  // Onda Vermelha
+        5: '6'   // Desfecho/Auditoria
+      };
+      
+      // Verificar se pode voltar para esta etapa
+      const currentPanelNum = parseInt(currentPatient.currentPanel) || 0;
+      
+      // Etapa 1 (identificação) não pode ser editada após iniciar
+      if (etapa === 1) {
+        alert('A identificação não pode ser alterada após iniciar o protocolo.');
+        return;
+      }
+      
+      // Só permite navegar para etapas já completadas ou a atual
+      const stepMap = { '1': 1, '2': 2, '3': 3, '4': 4, '5a': 5, '5b': 5, '6': 5 };
+      const currentStepNum = stepMap[currentPatient.currentPanel] || 0;
+      
+      if (etapa > currentStepNum) {
+        alert('Você ainda não chegou nesta etapa. Complete as etapas anteriores primeiro.');
+        return;
+      }
+      
+      // Navegar para o painel correto
+      let targetPanel = painelMap[etapa];
+      
+      // Se etapa 5, verificar se é 5a ou 5b baseado na onda
+      if (etapa === 5) {
+        if (currentPatient.onda === 'SIM') {
+          targetPanel = '5a';
+        } else if (currentPatient.onda === 'NAO') {
+          targetPanel = '5b';
+        } else {
+          targetPanel = '6'; // Auditoria
+        }
+      }
+      
+      showPanel(targetPanel);
+      
+      // Tocar som de confirmação
+      tocarBipe();
+    }
+
+    // ===== SISTEMA DE ÁUDIO =====
+    let audioCtx = null;
+    let audioAtivado = false;
+    
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioCtx;
+    }
+    
+    function ativarAudio() {
+      try {
+        initAudio();
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        audioAtivado = true;
+        
+        // Tocar bipe de confirmação
+        tocarBipe();
+        
+        // Atualizar botão
+        const btn = document.getElementById('btnAtivarAudio');
+        btn.textContent = '🔊 ÁUDIO ATIVADO';
+        btn.style.background = 'var(--accent-green)';
+        btn.onclick = null;
+      } catch (e) {
+        console.log('Erro ao ativar áudio:', e);
+      }
+    }
+    
+    function tocarBipe() {
+      try {
+        const ctx = initAudio();
+        if (ctx.state === 'suspended') ctx.resume();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 600;
+        gain.gain.value = 0.2;
+        osc.start();
+        setTimeout(() => osc.stop(), 100);
+      } catch (e) { console.log('Audio não suportado'); }
+    }
+    
+    function tocarAlarme() {
+      try {
+        const ctx = initAudio();
+        if (ctx.state === 'suspended') ctx.resume();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        gain.gain.value = 0.4;
+        osc.start();
+        setTimeout(() => { osc.frequency.value = 660; }, 150);
+        setTimeout(() => { osc.frequency.value = 880; }, 300);
+        setTimeout(() => osc.stop(), 450);
+      } catch (e) { console.log('Audio não suportado'); }
+    }
+
     // ===== NOVO PACIENTE =====
     function novoPaciente() {
       // Apenas limpar o paciente atual da seleção, mas manter a lista
@@ -1894,6 +2015,7 @@
     function tocarAlarmeLeve() {
       try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain);
@@ -1902,12 +2024,13 @@
         gain.gain.value = 0.3;
         osc.start();
         setTimeout(() => osc.stop(), 500);
-      } catch (e) { console.log('Audio não suportado'); }
+      } catch (e) { console.log('Audio não suportado:', e); }
     }
 
     function tocarAlarmeUrgente() {
       try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain);
@@ -1918,7 +2041,7 @@
         setTimeout(() => { osc.frequency.value = 800; }, 200);
         setTimeout(() => { osc.frequency.value = 1200; }, 400);
         setTimeout(() => osc.stop(), 600);
-      } catch (e) { console.log('Audio não suportado'); }
+      } catch (e) { console.log('Audio não suportado:', e); }
     }
 
     function silenciarAlerta() {
@@ -1983,6 +2106,10 @@
       }
 
       try {
+        // Buscar dados COMPLETOS do Firebase antes de finalizar
+        const casoDoc = await casosRef.doc(currentPatient.id).get();
+        const casoAtual = casoDoc.data();
+        
         const dadosFinais = {
           status: 'FINALIZADO',
           prontuario: prontuario,
@@ -1996,10 +2123,10 @@
         // Se continuar PTM, adicionar hemoderivados extras
         if (desfecho === 'Continuar PTM') {
           const extras = [];
-          const qtdHemacias = document.getElementById('qtdHemaciasExtra').value;
-          const qtdPlasma = document.getElementById('qtdPlasmaExtra').value;
-          const qtdPlaquetas = document.getElementById('qtdPlaquetasExtra').value;
-          const qtdCrio = document.getElementById('qtdCrioExtra').value;
+          const qtdHemacias = document.getElementById('qtdHemaciasExtra')?.value || 0;
+          const qtdPlasma = document.getElementById('qtdPlasmaExtra')?.value || 0;
+          const qtdPlaquetas = document.getElementById('qtdPlaquetasExtra')?.value || 0;
+          const qtdCrio = document.getElementById('qtdCrioExtra')?.value || 0;
           
           if (qtdHemacias > 0) extras.push(`Hemácias: ${qtdHemacias}U`);
           if (qtdPlasma > 0) extras.push(`Plasma: ${qtdPlasma}U`);
@@ -2012,8 +2139,13 @@
         
         await casosRef.doc(currentPatient.id).update(dadosFinais);
         
-        // Enviar para Google Sheets
-        const casoCompleto = { ...currentPatient, ...dadosFinais };
+        // Combinar dados do Firebase com dados finais para planilha
+        const casoCompleto = { 
+          ...casoAtual,  // Dados completos do Firebase
+          ...dadosFinais, // Dados de finalização
+          id: currentPatient.id
+        };
+        
         await enviarParaPlanilha(casoCompleto);
         
         currentPatient = null;
