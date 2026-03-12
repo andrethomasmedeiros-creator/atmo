@@ -784,7 +784,7 @@
                     { label:'Maca Acionada', campo: c.transpAcionadoTime, icone:'🔔' },
                     { label:'Maca na Sala',  campo: c.transpChegouTime,   icone:'🛏️' },
                     { label:'Saiu da Sala',  campo: c.transpSaidaSalaTime, icone:'🚑' },
-                    { label:'Recebido C.C.',  campo: c.ccRecebeuTime || c.ccFinalizadoTime, icone:'🏥' }
+                    { label:'Chegou C.C.',   campo: c.ccRecebeuTime,       icone:'🏥' }
                   ].map((s,i) => {
                     const ativo = !!s.campo;
                     const corFundo = ativo ? 'var(--accent-green)22' : 'var(--bg-secondary)';
@@ -796,6 +796,23 @@
                     </div>`;
                   }).join('')}
                 </div>
+              </div>
+
+              <!-- BARRA DE PROGRESSO DO PROTOCOLO -->
+              <div style="background:var(--bg-primary);border-radius:10px;padding:10px 12px;margin:0 0 10px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div style="font-size:10px;color:var(--text-secondary);font-weight:bold;min-width:100%;">📋 ETAPAS DO ENCERRAMENTO</div>
+                ${[
+                  { label: 'Ciência C.C.',      ok: !!c.ccAck,                    icone:'👁️' },
+                  { label: 'Paciente Chegou',   ok: !!c.ccRecebeuPaciente,        icone:'🏥' },
+                  { label: 'Auditoria Preench.', ok: !!(c.dadosAuditoriaPreenchidos || c.prontuario), icone:'📝' },
+                  { label: 'Protocolo Fechado', ok: !!c.ccFinalizado,             icone:'✅' },
+                ].map(e => `
+                  <div style="display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:20px;background:${e.ok ? 'rgba(48,209,88,0.15)' : 'var(--bg-secondary)'};border:1px solid ${e.ok ? 'var(--accent-green)' : 'var(--border)'};">
+                    <span style="font-size:13px;">${e.icone}</span>
+                    <span style="font-size:10px;font-weight:700;color:${e.ok ? 'var(--accent-green)' : 'var(--text-secondary)'};">${e.label}</span>
+                    <span style="font-size:11px;">${e.ok ? '✓' : '○'}</span>
+                  </div>
+                `).join('')}
               </div>
 
               <div class="info-grid">
@@ -838,18 +855,42 @@
                   <button class="btn btn-reconhecer" onclick="reconhecer('${c.id}')">
                     ✅ CONFIRMAR CIÊNCIA
                   </button>
-                ` : `
-                  <button class="btn btn-done" disabled>✅ CIENTE</button>
-                  ${c.dadosAuditoriaPreenchidos || c.prontuario ? `
-                    <button class="btn btn-encerrar" onclick="encerrar('${c.id}')">
-                      🏥 PACIENTE RECEBIDO NO C.C.
-                    </button>
-                  ` : `
-                    <button class="btn btn-encerrar" disabled style="opacity: 0.5;" title="Aguardando preenchimento do prontuário pela Sala Vermelha">
-                      ⏳ AGUARDANDO DADOS DE AUDITORIA
-                    </button>
-                  `}
-                `}
+                ` : (() => {
+                  const recebeu = c.ccRecebeuPaciente;
+                  const auditoriaOk = c.dadosAuditoriaPreenchidos || c.prontuario;
+
+                  if (!recebeu) {
+                    // ETAPA 1: CC pode registrar chegada a qualquer hora
+                    return `
+                      <button class="btn btn-done" disabled>✅ CIENTE</button>
+                      <button class="btn btn-encerrar" onclick="registrarRecebimento('${c.id}')"
+                        style="background:linear-gradient(135deg,#0a84ff,#0066cc);border-color:#0a84ff;box-shadow:0 0 18px rgba(10,132,255,0.4);">
+                        🏥 PACIENTE CHEGOU NO C.C.
+                      </button>
+                    `;
+                  } else if (!auditoriaOk) {
+                    // ETAPA 2a: Recebido, mas aguardando auditoria da Sala Vermelha
+                    return `
+                      <button class="btn btn-done" disabled style="background:#0a84ff22;border-color:#0a84ff;color:#0a84ff;">
+                        ✅ RECEBIDO ${c.ccRecebeuTime ? (() => { try { const d = c.ccRecebeuTime.toDate ? c.ccRecebeuTime.toDate() : new Date(c.ccRecebeuTime); return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); } catch(e){ return ''; } })() : ''}
+                      </button>
+                      <button class="btn btn-encerrar" disabled style="opacity:0.45;cursor:not-allowed;" title="Aguardando Sala Vermelha preencher prontuário e desfecho">
+                        ⏳ AGUARDANDO AUDITORIA
+                      </button>
+                    `;
+                  } else {
+                    // ETAPA 2b: Tudo pronto — pode finalizar
+                    return `
+                      <button class="btn btn-done" disabled style="background:#0a84ff22;border-color:#0a84ff;color:#0a84ff;">
+                        ✅ RECEBIDO ${c.ccRecebeuTime ? (() => { try { const d = c.ccRecebeuTime.toDate ? c.ccRecebeuTime.toDate() : new Date(c.ccRecebeuTime); return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); } catch(e){ return ''; } })() : ''}
+                      </button>
+                      <button class="btn btn-encerrar" onclick="finalizarProtocoloCC('${c.id}')"
+                        style="background:linear-gradient(135deg,#30d158,#27c75a);border-color:#30d158;box-shadow:0 0 18px rgba(48,209,88,0.4);">
+                        🏁 FINALIZAR PROTOCOLO
+                      </button>
+                    `;
+                  }
+                })()}
               </div>
 
               <!-- BOTÕES SECUNDÁRIOS -->
@@ -1031,64 +1072,90 @@
       }
     }
 
-    async function encerrar(id) {
+    // ===== ETAPA 1: REGISTRAR CHEGADA DO PACIENTE NO C.C. (independente de auditoria) =====
+    async function registrarRecebimento(id) {
+      if (!confirm('🏥 CONFIRMAR CHEGADA DO PACIENTE\n\nO paciente acabou de chegar ao Centro Cirúrgico?\n\nIsso registrará o horário de chegada agora.\nO protocolo será finalizado após o preenchimento da auditoria pela Sala Vermelha.')) {
+        return;
+      }
+
       try {
-        // Buscar dados completos do caso primeiro
         const casoDoc = await casosRef.doc(id).get();
         const casoData = casoDoc.data();
-        
-        // BLOQUEIO: Verificar se auditoria foi preenchida antes de registrar recebimento
-        if (!casoData.dadosAuditoriaPreenchidos && !casoData.prontuario) {
-          alert('⚠️ BLOQUEIO DE SEGURANÇA\n\nOs dados de auditoria ainda não foram preenchidos pela Sala Vermelha.\n\nO prontuário e desfecho devem ser registrados antes que o C.C. confirme o recebimento.\n\n→ Solicite pelo chat que a Sala Vermelha preencha os dados.');
-          return;
-        }
-        
-        if (!confirm('✅ CONFIRMAR RECEBIMENTO DO PACIENTE\n\nConfirma que o paciente chegou ao Centro Cirúrgico?\n\nIsso registrará o horário de chegada e encerrará o protocolo PTM.')) {
-          return;
-        }
-        
         const ccRecebeuTime = agora();
-        
-        // Calcular tempo saída sala -> chegada CC se disponível
+
+        // Calcular tempo saída sala → chegada CC
         let tempoSaidaChegadaCC = '';
         if (casoData.transpSaidaSalaTime) {
           const saidaMs = casoData.transpSaidaSalaTime.toMillis ? casoData.transpSaidaSalaTime.toMillis() : casoData.transpSaidaSalaTime;
-          const chegadaMs = Date.now();
-          const diffSecs = Math.floor((chegadaMs - saidaMs) / 1000);
+          const diffSecs = Math.floor((Date.now() - saidaMs) / 1000);
           const mins = Math.floor(diffSecs / 60);
           const secs = diffSecs % 60;
-          tempoSaidaChegadaCC = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+          tempoSaidaChegadaCC = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
         }
-        
+
+        await casosRef.doc(id).update({
+          ccRecebeuPaciente: true,
+          ccRecebeuTime: ccRecebeuTime,
+          ccFinalizadoTime: ccRecebeuTime,   // registra o horário de chegada
+          tempoSaidaChegadaCC: tempoSaidaChegadaCC,
+          statusNac: 'PACIENTE NO C.C. — AGUARDANDO AUDITORIA'
+        });
+
+        alert('✅ Chegada registrada!\n\nHorário: ' + new Date().toLocaleTimeString('pt-BR') + '\n\nO protocolo será encerrado após o preenchimento da auditoria pela Sala Vermelha.');
+      } catch (error) {
+        console.error('Erro ao registrar recebimento:', error);
+        alert('Erro ao registrar. Tente novamente.');
+      }
+    }
+
+    // ===== ETAPA 2: FINALIZAR PROTOCOLO (só depois que auditoria estiver preenchida) =====
+    async function finalizarProtocoloCC(id) {
+      try {
+        const casoDoc = await casosRef.doc(id).get();
+        const casoData = casoDoc.data();
+
+        // Segurança: confirmar que auditoria está preenchida
+        if (!casoData.dadosAuditoriaPreenchidos && !casoData.prontuario) {
+          alert('⚠️ A auditoria ainda não foi preenchida pela Sala Vermelha.\n\nAguarde o preenchimento do prontuário e desfecho antes de finalizar.');
+          return;
+        }
+
+        if (!confirm('🏁 FINALIZAR PROTOCOLO PTM\n\nTodos os dados estão preenchidos.\nDeseja encerrar o protocolo agora?\n\nIsso enviará os dados para a planilha de auditoria.')) {
+          return;
+        }
+
+        const agora_ = agora();
+
         await casosRef.doc(id).update({
           status: 'FINALIZADO',
           ccFinalizado: true,
-          ccRecebeuPaciente: true,          // novo campo: recebimento confirmado
-          ccFinalizadoTime: ccRecebeuTime,
-          ccRecebeuTime: ccRecebeuTime,
-          tempoSaidaChegadaCC: tempoSaidaChegadaCC,
+          ccFinalizadoAt: agora_,
           statusNac: 'ENCERRADO NO CENTRO CIRÚRGICO'
         });
-        
+
         // Enviar para Google Sheets
-        const casoCompleto = { 
-          ...casoData, 
+        const casoCompleto = {
+          ...casoData,
           id: id,
-          ccFinalizadoTime: ccRecebeuTime,
-          ccRecebeuTime: ccRecebeuTime,
+          ccFinalizadoAt: agora_,
           status: 'FINALIZADO'
         };
         await enviarParaPlanilha(casoCompleto);
-        
-        // Mostrar botão de PDF na tela
+
+        // Mostrar botão de PDF
         window.ultimoCasoCCFinalizado = casoCompleto;
         mostrarBotaoPDFCC(casoCompleto);
-        
-        alert('✅ Recebimento confirmado!\n\nHorário de chegada registrado.\nProtocolo PTM encerrado com sucesso.\n\nUse o botão 📄 PDF para imprimir o relatório.');
+
+        alert('✅ Protocolo PTM finalizado com sucesso!\n\nDados enviados para a planilha de auditoria.\nUse o botão 📄 para imprimir o relatório.');
       } catch (error) {
-        console.error('Erro:', error);
-        alert('Erro ao confirmar recebimento. Tente novamente.');
+        console.error('Erro ao finalizar:', error);
+        alert('Erro ao finalizar. Tente novamente.');
       }
+    }
+
+    // ===== FUNÇÃO LEGADA (mantida para compatibilidade) =====
+    async function encerrar(id) {
+      return finalizarProtocoloCC(id);
     }
 
     function mostrarBotaoPDFCC(dados) {
