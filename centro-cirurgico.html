@@ -705,6 +705,8 @@
     }, 2000);
 
     // ===== ESCUTAR FIREBASE (APENAS ONDA VERMELHA) =====
+    let chatCCModalAberto = false;
+
     function escutarCasos() {
       if (unsubscribe) unsubscribe();
       
@@ -720,6 +722,8 @@
           renderCards();
           atualizarStatus();
           if (typeof verificarNovasMensagensCC === 'function') verificarNovasMensagensCC(casos);
+          // Atualizar chat em tempo real se modal estiver aberto
+          if (chatCCModalAberto && chatCCAtivo) renderizarChatCC();
         }, (error) => {
           console.error('Erro ao escutar casos:', error);
         });
@@ -773,7 +777,7 @@
                     { label:'Maca Acionada', campo: c.transpAcionadoTime, icone:'🔔' },
                     { label:'Maca na Sala',  campo: c.transpChegouTime,   icone:'🛏️' },
                     { label:'Saiu da Sala',  campo: c.transpSaidaSalaTime, icone:'🚑' },
-                    { label:'No C.C.',       campo: c.ccFinalizadoTime,    icone:'🏥' }
+                    { label:'Recebido C.C.',  campo: c.ccRecebeuTime || c.ccFinalizadoTime, icone:'🏥' }
                   ].map((s,i) => {
                     const ativo = !!s.campo;
                     const corFundo = ativo ? 'var(--accent-green)22' : 'var(--bg-secondary)';
@@ -831,11 +835,11 @@
                   <button class="btn btn-done" disabled>✅ CIENTE</button>
                   ${c.dadosAuditoriaPreenchidos || c.prontuario ? `
                     <button class="btn btn-encerrar" onclick="encerrar('${c.id}')">
-                      🏁 PACIENTE NA MESA
+                      🏥 PACIENTE RECEBIDO NO C.C.
                     </button>
                   ` : `
                     <button class="btn btn-encerrar" disabled style="opacity: 0.5;" title="Aguardando preenchimento do prontuário pela Sala Vermelha">
-                      ⏳ AGUARDANDO AUDITORIA
+                      ⏳ AGUARDANDO DADOS DE AUDITORIA
                     </button>
                   `}
                 `}
@@ -1025,17 +1029,17 @@
         const casoDoc = await casosRef.doc(id).get();
         const casoData = casoDoc.data();
         
-        // Verificar se prontuário foi preenchido
+        // BLOQUEIO: Verificar se auditoria foi preenchida antes de registrar recebimento
         if (!casoData.dadosAuditoriaPreenchidos && !casoData.prontuario) {
-          alert('⚠️ ATENÇÃO!\n\nO prontuário ainda não foi preenchido pela Sala Vermelha.\n\nAguarde o preenchimento dos dados de auditoria antes de encerrar o protocolo.');
+          alert('⚠️ BLOQUEIO DE SEGURANÇA\n\nOs dados de auditoria ainda não foram preenchidos pela Sala Vermelha.\n\nO prontuário e desfecho devem ser registrados antes que o C.C. confirme o recebimento.\n\n→ Solicite pelo chat que a Sala Vermelha preencha os dados.');
           return;
         }
         
-        if (!confirm('Confirma que o paciente está na mesa cirúrgica?\n\nIsso encerrará o protocolo PTM.')) {
+        if (!confirm('✅ CONFIRMAR RECEBIMENTO DO PACIENTE\n\nConfirma que o paciente chegou ao Centro Cirúrgico?\n\nIsso registrará o horário de chegada e encerrará o protocolo PTM.')) {
           return;
         }
         
-        const ccFinalizadoTime = agora();
+        const ccRecebeuTime = agora();
         
         // Calcular tempo saída sala -> chegada CC se disponível
         let tempoSaidaChegadaCC = '';
@@ -1051,7 +1055,9 @@
         await casosRef.doc(id).update({
           status: 'FINALIZADO',
           ccFinalizado: true,
-          ccFinalizadoTime: ccFinalizadoTime,
+          ccRecebeuPaciente: true,          // novo campo: recebimento confirmado
+          ccFinalizadoTime: ccRecebeuTime,
+          ccRecebeuTime: ccRecebeuTime,
           tempoSaidaChegadaCC: tempoSaidaChegadaCC,
           statusNac: 'ENCERRADO NO CENTRO CIRÚRGICO'
         });
@@ -1060,15 +1066,16 @@
         const casoCompleto = { 
           ...casoData, 
           id: id,
-          ccFinalizadoTime: ccFinalizadoTime,
+          ccFinalizadoTime: ccRecebeuTime,
+          ccRecebeuTime: ccRecebeuTime,
           status: 'FINALIZADO'
         };
         await enviarParaPlanilha(casoCompleto);
         
-        alert('✅ Protocolo PTM encerrado com sucesso!\n\nDados salvos na planilha.');
+        alert('✅ Recebimento confirmado!\n\nHorário de chegada registrado.\nProtocolo PTM encerrado com sucesso.');
       } catch (error) {
         console.error('Erro:', error);
-        alert('Erro ao encerrar. Tente novamente.');
+        alert('Erro ao confirmar recebimento. Tente novamente.');
       }
     }
 
@@ -1077,13 +1084,18 @@
 
     function abrirChatCC(id) {
       chatCCAtivo = id;
+      chatCCModalAberto = true;
       const modal = document.getElementById('modalChatCC');
       if (!modal) return;
+      // Limpar badge ao abrir
+      const badge = document.getElementById('chatBadgeCC');
+      if (badge) badge.style.display = 'none';
       renderizarChatCC();
       modal.style.display = 'flex';
     }
 
     function fecharChatCC() {
+      chatCCModalAberto = false;
       document.getElementById('modalChatCC').style.display = 'none';
       chatCCAtivo = null;
     }
@@ -1367,9 +1379,14 @@
       });
       if (maisRecente.chatNovoAt && maisRecente.chatNovoAt !== ultimoChatCCAt) {
         if (ultimoChatCCAt !== null) {
-          tocarSomChatCC();
-          const badge = document.getElementById('chatBadgeCC');
-          if (badge) { badge.style.display = 'flex'; badge.textContent = '!'; }
+          // Só toca som se a mensagem não foi do próprio C.C.
+          const chat = maisRecente.chat || [];
+          const ultima = chat[chat.length - 1];
+          if (ultima && ultima.origem !== 'CENTRO CIRÚRGICO') {
+            tocarSomChatCC();
+            const badge = document.getElementById('chatBadgeCC');
+            if (badge) { badge.style.display = 'flex'; badge.textContent = '!'; }
+          }
         }
         ultimoChatCCAt = maisRecente.chatNovoAt;
       }
