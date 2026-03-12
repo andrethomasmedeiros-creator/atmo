@@ -823,6 +823,7 @@
           });
           renderCards();
           atualizarStatus();
+          if (typeof verificarNovasMensagensNac === 'function') verificarNovasMensagensNac(casos);
         }, (error) => {
           console.error('Erro ao escutar casos:', error);
         });
@@ -1312,14 +1313,18 @@ ${ondaStatus}
   <div id="modalChatNac" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;align-items:center;justify-content:center;padding:16px;">
     <div style="background:var(--bg-card);border-radius:16px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;">
       <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
-        <h3 style="margin:0;font-size:15px;">💬 Chat — Sala Vermelha / C.C.</h3>
+        <h3 style="margin:0;font-size:15px;">💬 Chat — NAC</h3>
         <button onclick="fecharChatNac()" style="background:none;border:none;color:var(--text-primary);font-size:22px;cursor:pointer;">✕</button>
       </div>
-      <div id="listaChatNac" style="overflow-y:auto;padding:16px;flex:1;max-height:240px;"></div>
-      <div style="padding:12px 16px;border-top:1px solid var(--border);">
-        <p style="color:var(--text-secondary);font-size:11px;margin-bottom:8px;font-weight:bold;">MENSAGENS RÁPIDAS DO NAC:</p>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
-            <div style="display:flex;gap:8px;">
+      <div id="listaChatNac" style="overflow-y:auto;padding:16px;flex:1;max-height:260px;"></div>
+      <div style="padding:10px 16px;border-top:1px solid var(--border);">
+        <p style="color:var(--text-secondary);font-size:10px;margin-bottom:6px;font-weight:bold;letter-spacing:0.5px;">ATALHOS RÁPIDOS:</p>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px;">
+          <span onclick="enviarMensagemNac('🩸 Hemoderivados a caminho')" style="color:var(--accent-orange);font-size:12px;cursor:pointer;padding:4px 0;border-bottom:1px solid var(--border);">🩸 Hemoderivados a caminho</span>
+          <span onclick="enviarMensagemNac('📞 Especialista acionado')" style="color:var(--accent-blue);font-size:12px;cursor:pointer;padding:4px 0;border-bottom:1px solid var(--border);">📞 Especialista acionado</span>
+          <span onclick="enviarMensagemNac('✅ NAC pronto para suporte')" style="color:var(--accent-green);font-size:12px;cursor:pointer;padding:4px 0;">✅ NAC pronto para suporte</span>
+        </div>
+        <div style="display:flex;gap:8px;">
           <input id="chatInputNac" type="text" placeholder="Mensagem do NAC..." style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-primary);font-size:13px;" onkeydown="if(event.key==='Enter') enviarMensagemCustomNac()">
           <button onclick="enviarMensagemCustomNac()" style="padding:10px 16px;background:var(--accent-orange);color:#fff;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">ENVIAR</button>
         </div>
@@ -1337,6 +1342,64 @@ ${ondaStatus}
       <div id="listaHistoricoNac" style="overflow-y:auto;padding:16px;flex:1;"></div>
     </div>
   </div>
+
+
+  <!-- ===== BOTÃO CHAT FLUTUANTE FIXO ===== -->
+  <div style="position:fixed; bottom:20px; right:20px; z-index:8500;">
+    <div id="chatBadgeNac" style="display:none; position:absolute; top:-6px; right:-6px; background:var(--accent-red); color:#fff; border-radius:50%; width:18px; height:18px; font-size:10px; font-weight:bold; align-items:center; justify-content:center;"></div>
+    <button onclick="abrirChatNacGlobal()" style="width:56px; height:56px; border-radius:50%; background:var(--accent-orange); border:none; color:#fff; font-size:22px; cursor:pointer; box-shadow:0 4px 20px rgba(255,149,0,0.5); display:flex; align-items:center; justify-content:center;">💬</button>
+  </div>
+
+  <script>
+    function tocarSomChatNac() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.4);
+      } catch(e) {}
+    }
+
+    let ultimoChatNacAt = null;
+    let chatNacAberto = false;
+
+    function abrirChatNacGlobal() {
+      // Abre chat do primeiro caso ativo, ou o mais recente
+      if (casos && casos.length > 0) {
+        const ativos = casos.filter(c => !c.finalizadoAt);
+        const alvo = ativos.length > 0 ? ativos[0] : casos[casos.length - 1];
+        abrirChatNac(alvo.id);
+        chatNacAberto = true;
+        const badge = document.getElementById('chatBadgeNac');
+        if (badge) badge.style.display = 'none';
+      }
+    }
+
+    // Detectar nova mensagem via Firestore e mostrar badge
+    function verificarNovasMensagensNac(casosNovos) {
+      if (!casosNovos || casosNovos.length === 0) return;
+      const maisRecente = casosNovos.reduce((a, b) => {
+        const ta = a.chatNovoAt || '';
+        const tb = b.chatNovoAt || '';
+        return tb > ta ? b : a;
+      });
+      if (maisRecente.chatNovoAt && maisRecente.chatNovoAt !== ultimoChatNacAt) {
+        if (ultimoChatNacAt !== null) {
+          tocarSomChatNac();
+          const badge = document.getElementById('chatBadgeNac');
+          if (badge) { badge.style.display = 'flex'; badge.textContent = '!'; }
+        }
+        ultimoChatNacAt = maisRecente.chatNovoAt;
+      }
+    }
+  </script>
 
 </body>
 </html>
