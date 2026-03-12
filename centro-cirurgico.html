@@ -497,34 +497,38 @@
     /* ===== AUDIO INDICATOR ===== */
     .audio-indicator {
       position: fixed;
-      bottom: 30px;
-      right: 30px;
+      bottom: 90px;
+      right: 22px;
       background: var(--bg-card);
       border: 2px solid var(--border);
-      padding: 15px 20px;
-      border-radius: 16px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: center;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.3s;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      z-index: 8000;
     }
 
     .audio-indicator:hover {
       border-color: var(--accent-teal);
+      transform: scale(1.08);
     }
 
     .audio-indicator.active {
       border-color: var(--accent-green);
+      box-shadow: 0 0 18px rgba(48,209,88,0.4);
     }
 
     .audio-indicator .icon {
-      font-size: 24px;
+      font-size: 22px;
     }
 
     .audio-indicator .text {
-      font-size: 12px;
-      font-weight: 700;
+      display: none;
     }
 
     /* ===== RESPONSIVE ===== */
@@ -691,8 +695,11 @@
       if (!audioAtivo) {
         initAudio();
         audioAtivo = true;
-        document.getElementById('audioIndicator').classList.add('active');
-        document.getElementById('audioIndicator').innerHTML = '<div class="icon">🔊</div><div class="text">ÁUDIO LIGADO</div>';
+        const ind = document.getElementById('audioIndicator');
+        ind.classList.add('active');
+        ind.innerHTML = '<div class="icon">🔊</div>';
+        ind.title = 'Áudio ativado';
+        try { tocarAlarme('urgente'); } catch(e) { /* firebase-config pode não ter leve */ }
       }
     }
     
@@ -846,10 +853,11 @@
               </div>
 
               <!-- BOTÕES SECUNDÁRIOS -->
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-top:8px;">
                 <button onclick="abrirChatCC('${c.id}')" style="padding:8px;background:var(--bg-primary);border:1px solid #30d158;border-radius:8px;color:#30d158;font-size:11px;cursor:pointer;font-weight:700;">💬 CHAT</button>
                 <button onclick="abrirHistoricoCC('${c.id}')" style="padding:8px;background:var(--bg-primary);border:1px solid #0a84ff;border-radius:8px;color:#0a84ff;font-size:11px;cursor:pointer;font-weight:700;">📋 HISTÓRICO</button>
                 <button onclick="gerarPDFCC('${c.id}')" style="padding:8px;background:var(--bg-primary);border:1px solid #bf5af2;border-radius:8px;color:#bf5af2;font-size:11px;cursor:pointer;font-weight:700;">📄 PDF</button>
+                ${c.ccFinalizado ? `<button onclick="window.ultimoCasoCCFinalizado={...${JSON.stringify({id:c.id})}}; gerarPDFCC('${c.id}')" style="padding:8px;background:rgba(191,90,242,0.15);border:1px solid #bf5af2;border-radius:8px;color:#bf5af2;font-size:11px;cursor:pointer;font-weight:800;">🖨️ FINAL</button>` : '<div></div>'}
               </div>
             </div>
             
@@ -1072,11 +1080,28 @@
         };
         await enviarParaPlanilha(casoCompleto);
         
-        alert('✅ Recebimento confirmado!\n\nHorário de chegada registrado.\nProtocolo PTM encerrado com sucesso.');
+        // Mostrar botão de PDF na tela
+        window.ultimoCasoCCFinalizado = casoCompleto;
+        mostrarBotaoPDFCC(casoCompleto);
+        
+        alert('✅ Recebimento confirmado!\n\nHorário de chegada registrado.\nProtocolo PTM encerrado com sucesso.\n\nUse o botão 📄 PDF para imprimir o relatório.');
       } catch (error) {
         console.error('Erro:', error);
         alert('Erro ao confirmar recebimento. Tente novamente.');
       }
+    }
+
+    function mostrarBotaoPDFCC(dados) {
+      // Criar ou atualizar botão PDF flutuante
+      let btn = document.getElementById('btnPDFCCFlutuante');
+      if (!btn) {
+        btn = document.createElement('div');
+        btn.id = 'btnPDFCCFlutuante';
+        btn.style.cssText = 'position:fixed;bottom:160px;right:18px;z-index:9000;';
+        btn.innerHTML = `<button onclick="gerarPDFCC('_ultimo')" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#6f42c1,#bf5af2);border:none;color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 20px rgba(191,90,242,0.5);display:flex;align-items:center;justify-content:center;" title="Imprimir PDF">📄</button>`;
+        document.body.appendChild(btn);
+      }
+      btn.style.display = 'block';
     }
 
     // ===== CHAT CENTRO CIRÚRGICO =====
@@ -1171,8 +1196,13 @@
 
     // ===== PDF CENTRO CIRÚRGICO =====
     function gerarPDFCC(id) {
-      const caso = casos.find(c => c.id === id);
-      if (!caso) return;
+      let caso;
+      if (id === '_ultimo') {
+        caso = window.ultimoCasoCCFinalizado;
+      } else {
+        caso = casos.find(c => c.id === id) || window.ultimoCasoCCFinalizado;
+      }
+      if (!caso) { alert('Dados do caso não disponíveis. Tente gerar o PDF logo após o encerramento.'); return; }
       if (!window.jspdf) { alert('PDF indisponível. Verifique conexão.'); return; }
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
