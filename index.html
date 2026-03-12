@@ -846,6 +846,14 @@
         <button class="btn-limpar" onclick="forcarLimpeza()" style="width: 100%; margin-top: 10px; padding: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 12px; cursor: pointer;">
           🧹 FORÇAR LIMPEZA DE TELA
         </button>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
+          <button onclick="abrirChat()" style="padding:10px; background:var(--bg-card); border:1px solid var(--accent-orange); border-radius:8px; color:var(--accent-orange); font-size:12px; cursor:pointer; font-weight:700;">
+            💬 CHAT NAC
+          </button>
+          <button onclick="abrirHistorico()" style="padding:10px; background:var(--bg-card); border:1px solid var(--accent-green); border-radius:8px; color:var(--accent-green); font-size:12px; cursor:pointer; font-weight:700;">
+            📋 HISTÓRICO
+          </button>
+        </div>
       </div>
       <div class="patients-list" id="patientsList">
         <!-- Pacientes serão renderizados aqui -->
@@ -1281,6 +1289,69 @@
               <div class="big-timer-value" id="timerHemo">00:00</div>
             </div>
 
+            <!-- ===== CONTADOR DE UNIDADES ADMINISTRADAS ===== -->
+            <div id="contadorUnidades" style="margin: 16px 0;">
+              <div style="background:var(--bg-primary); border:2px solid var(--accent-red); border-radius:12px; padding:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                  <span style="font-size:13px; font-weight:bold;">🩸 UNIDADES ADMINISTRADAS</span>
+                  <span style="color:var(--text-secondary); font-size:11px;">Atualiza no NAC em tempo real</span>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <!-- CH -->
+                  <div style="background:var(--bg-card); border-radius:10px; padding:12px; text-align:center;">
+                    <div style="color:#ff6b6b; font-size:11px; font-weight:bold; margin-bottom:8px;">HEMÁCIAS (CH)</div>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
+                      <button onclick="ajustarUnidade('hemacias',-1)" style="width:32px;height:32px;border-radius:50%;background:var(--accent-red);color:#fff;border:none;font-size:18px;cursor:pointer;">−</button>
+                      <span id="cnt_hemacias" style="font-size:26px; font-weight:bold; min-width:30px;">0</span>
+                      <button onclick="ajustarUnidade('hemacias',1)" style="width:32px;height:32px;border-radius:50%;background:var(--accent-green);color:#fff;border:none;font-size:18px;cursor:pointer;">+</button>
+                    </div>
+                    <div style="color:var(--text-secondary); font-size:10px; margin-top:6px;">Solicitado: <span id="sol_hemacias">0</span></div>
+                  </div>
+                  <!-- PFC -->
+                  <div style="background:var(--bg-card); border-radius:10px; padding:12px; text-align:center;">
+                    <div style="color:#ffd93d; font-size:11px; font-weight:bold; margin-bottom:8px;">PLASMA (PFC)</div>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
+                      <button onclick="ajustarUnidade('plasma',-1)" style="width:32px;height:32px;border-radius:50%;background:var(--accent-red);color:#fff;border:none;font-size:18px;cursor:pointer;">−</button>
+                      <span id="cnt_plasma" style="font-size:26px; font-weight:bold; min-width:30px;">0</span>
+                      <button onclick="ajustarUnidade('plasma',1)" style="width:32px;height:32px;border-radius:50%;background:var(--accent-green);color:#fff;border:none;font-size:18px;cursor:pointer;">+</button>
+                    </div>
+                    <div style="color:var(--text-secondary); font-size:10px; margin-top:6px;">Solicitado: <span id="sol_plasma">0</span></div>
+                  </div>
+                  <!-- Plaquetas -->
+                  <div style="background:var(--bg-card); border-radius:10px; padding:12px; text-align:center;">
+                    <div style="color:#6bcb77; font-size:11px; font-weight:bold; margin-bottom:8px;">PLAQUETAS</div>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
+                      <button onclick="ajustarUnidade('plaquetas',-1)" style="width:32px;height:32px;border-radius:50%;background:var(--accent-red);color:#fff;border:none;font-size:18px;cursor:pointer;">−</button>
+                      <span id="cnt_plaquetas" style="font-size:26px; font-weight:bold; min-width:30px;">0</span>
+                      <button onclick="ajustarUnidade('plaquetas',1)" style="width:32px;height:32px;border-radius:50%;background:var(--accent-green);color:#fff;border:none;font-size:18px;cursor:pointer;">+</button>
+                    </div>
+                    <div style="color:var(--text-secondary); font-size:10px; margin-top:6px;">Solicitado: <span id="sol_plaquetas">0</span></div>
+                  </div>
+                  <!-- Crioprecipitado -->
+                  <div style="background:var(--bg-card); border-radius:10px; padding:12px; text-align:center;">
+                    <div style="color:#a29bfe; font-size:11px; font-weight:bold; margin-bottom:8px;">CRIOPRECIPITADO</div>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
+                      <button onclick="ajustarUnidade('crioprecipitado',-1)" style="width:32px;height:32px;border-radius:50%;background:var(--accent-red);color:#fff;border:none;font-size:18px;cursor:pointer;">−</button>
+                      <span id="cnt_crioprecipitado" style="font-size:26px; font-weight:bold; min-width:30px;">0</span>
+                      <button onclick="ajustarUnidade('crioprecipitado',1)" style="width:32px;height:32px;border-radius:50%;background:var(--accent-green);color:#fff;border:none;font-size:18px;cursor:pointer;">+</button>
+                    </div>
+                    <div style="color:var(--text-secondary); font-size:10px; margin-top:6px;">Solicitado: <span id="sol_crioprecipitado">0</span></div>
+                  </div>
+                </div>
+                <!-- Barra de progresso -->
+                <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
+                  <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="color:var(--text-secondary); font-size:11px;">Total administrado</span>
+                    <span id="cnt_total_label" style="font-size:11px; font-weight:bold;">0 / 0 unidades</span>
+                  </div>
+                  <div style="background:var(--border); border-radius:6px; height:8px; overflow:hidden;">
+                    <div id="cnt_barra" style="background:linear-gradient(90deg,#c00,#ff6b6b); height:100%; width:0%; transition:width 0.4s;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- ===== FIM CONTADOR ===== -->
+
             <div id="alertaExames" style="display: none; background: var(--accent-orange); padding: 20px; border-radius: 16px; margin: 20px 0; text-align: center; animation: pulse 1s infinite;">
               <h3 style="color: white; margin-bottom: 10px;">⚠️ COLETAR NOVOS EXAMES!</h3>
               <p style="color: white; opacity: 0.9;">30 minutos de hemotransfusão</p>
@@ -1403,6 +1474,9 @@
     </main>
   </div>
 
+
+  <!-- jsPDF para relatório PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -1771,6 +1845,7 @@
           espChegouTime: agora(),
           statusNac: 'ESPECIALISTA NA SALA - DECIDINDO ONDA'
         });
+        registrarHistorico('👨‍⚕️ Especialista chegou na sala');
       } catch (error) {
         console.error('Erro:', error);
       }
@@ -1791,6 +1866,7 @@
         
         // Atualizar estado local
         currentPatient.onda = valor;
+        registrarHistorico(valor === 'SIM' ? '🚨 ONDA VERMELHA ativada — transporte para C.C.' : '🩸 Hemotransfusão local iniciada');
         
         if (valor === 'SIM') {
           startTimer('timerAguardandoTransp', Date.now());
@@ -1951,8 +2027,10 @@
         document.getElementById('etapa5b-2').style.display = 'none';
         document.getElementById('etapa5b-3').style.display = 'block';
         
-        // Iniciar timer
+        // Iniciar timer e contador
         startHemoTimer();
+        iniciarContadorUnidades();
+        registrarHistorico('🩸 Hemotransfusão iniciada');
         
       } catch (error) {
         console.error('Erro:', error);
@@ -2143,8 +2221,7 @@
         };
         
         await enviarParaPlanilha(casoCompleto);
-        // Após o enviarParaPlanilha(dadosCompletos):
-        gerarRelatorioPDF(dadosCompletos);
+        gerarRelatorioPDF(casoCompleto);
         
         currentPatient = null;
         showPanel('empty');
@@ -2321,6 +2398,11 @@
       
       // Restaurar estado da UI baseado nos dados do paciente
       restaurarEstadoPaciente(currentPatient);
+      
+      // Restaurar contador se transfusão em andamento
+      if (currentPatient.horaInicioTransfusao) {
+        setTimeout(() => iniciarContadorUnidades(), 300);
+      }
       
       showPanel((currentPatient.currentPanel || 2).toString());
     }
@@ -2594,7 +2676,237 @@
     function iniciarSistema() {
       showPanel('empty');
       escutarCasos();
+      iniciarMonitoramentoParado();
     }
+    // ===== CONTADOR DE UNIDADES =====
+    function iniciarContadorUnidades() {
+      if (!currentPatient) return;
+      const d = currentPatient.hemoderivadosDetalhado || {};
+      document.getElementById('sol_hemacias').textContent = d.hemacias || 0;
+      document.getElementById('sol_plasma').textContent = d.plasma || 0;
+      document.getElementById('sol_plaquetas').textContent = d.plaquetas || 0;
+      document.getElementById('sol_crioprecipitado').textContent = d.crioprecipitado || 0;
+      const adm = currentPatient.unidadesAdministradas || {};
+      ['hemacias','plasma','plaquetas','crioprecipitado'].forEach(p => {
+        const el = document.getElementById('cnt_' + p);
+        if (el) el.textContent = adm[p] || 0;
+      });
+      atualizarBarraContador();
+    }
+
+    async function ajustarUnidade(produto, delta) {
+      if (!currentPatient) return;
+      const el = document.getElementById('cnt_' + produto);
+      let atual = parseInt(el.textContent) || 0;
+      atual = Math.max(0, atual + delta);
+      el.textContent = atual;
+      atualizarBarraContador();
+      const adm = currentPatient.unidadesAdministradas || {};
+      adm[produto] = atual;
+      currentPatient.unidadesAdministradas = adm;
+      // Registrar no histórico
+      registrarHistorico(`🩸 ${produto.charAt(0).toUpperCase()+produto.slice(1)}: ${atual} unidade(s) administrada(s)`);
+      try {
+        await casosRef.doc(currentPatient.id).update({ unidadesAdministradas: adm, unidadesAtualizadoAt: agora() });
+      } catch(e) { console.error('Erro contador:', e); }
+    }
+
+    function atualizarBarraContador() {
+      const produtos = ['hemacias','plasma','plaquetas','crioprecipitado'];
+      let totalAdm = 0, totalSol = 0;
+      produtos.forEach(p => {
+        totalAdm += parseInt(document.getElementById('cnt_'+p)?.textContent) || 0;
+        totalSol += parseInt(document.getElementById('sol_'+p)?.textContent) || 0;
+      });
+      const pct = totalSol > 0 ? Math.min(100, Math.round((totalAdm/totalSol)*100)) : 0;
+      const barra = document.getElementById('cnt_barra');
+      const label = document.getElementById('cnt_total_label');
+      if (barra) {
+        barra.style.width = pct + '%';
+        if (pct >= 100) barra.style.background = 'linear-gradient(90deg,#2d6a4f,#6bcb77)';
+        else if (pct >= 50) barra.style.background = 'linear-gradient(90deg,#b8860b,#ffd93d)';
+        else barra.style.background = 'linear-gradient(90deg,#c00,#ff6b6b)';
+      }
+      if (label) label.textContent = `${totalAdm} / ${totalSol} unidades (${pct}%)`;
+    }
+
+    // ===== HISTÓRICO DE AÇÕES =====
+    async function registrarHistorico(descricao) {
+      if (!currentPatient) return;
+      try {
+        const entrada = { ts: new Date().toISOString(), txt: descricao };
+        const historico = currentPatient.historico || [];
+        historico.push(entrada);
+        currentPatient.historico = historico;
+        await casosRef.doc(currentPatient.id).update({ historico });
+      } catch(e) { console.error('Erro histórico:', e); }
+    }
+
+    function abrirHistorico() {
+      const modal = document.getElementById('modalHistorico');
+      if (!modal || !currentPatient) return;
+      const hist = currentPatient.historico || [];
+      const lista = document.getElementById('listaHistorico');
+      if (lista) {
+        if (hist.length === 0) {
+          lista.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:20px;">Nenhuma ação registrada ainda.</p>';
+        } else {
+          lista.innerHTML = [...hist].reverse().map(h => {
+            const hora = new Date(h.ts).toLocaleTimeString('pt-BR');
+            return `<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+              <span style="color:var(--accent-orange);font-size:11px;min-width:55px;padding-top:2px;">${hora}</span>
+              <span style="font-size:13px;">${h.txt}</span>
+            </div>`;
+          }).join('');
+        }
+      }
+      modal.style.display = 'flex';
+    }
+
+    function fecharHistorico() {
+      const modal = document.getElementById('modalHistorico');
+      if (modal) modal.style.display = 'none';
+    }
+
+    // ===== CHAT RÁPIDO =====
+    const MENSAGENS_RAPIDAS = [
+      '✅ Especialista presente na sala',
+      '🚨 Necessidade urgente de hemoderivados',
+      '🩸 Solicitar mais 2 CH adicionais',
+      '🏥 CC pronto para receber paciente',
+      '⏳ Aguardando resultado de exames',
+      '🛗 Aguardando elevador/transporte',
+      '📞 Favor retornar ligação urgente',
+      '✅ Paciente estabilizado'
+    ];
+
+    function abrirChat() {
+      const modal = document.getElementById('modalChat');
+      if (!modal) return;
+      renderizarMensagensChat();
+      modal.style.display = 'flex';
+    }
+
+    function fecharChat() {
+      const modal = document.getElementById('modalChat');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function enviarMensagemChat(texto) {
+      if (!currentPatient || !texto) return;
+      const msg = {
+        ts: new Date().toISOString(),
+        txt: texto,
+        origem: 'SALA VERMELHA'
+      };
+      const chat = currentPatient.chat || [];
+      chat.push(msg);
+      currentPatient.chat = chat;
+      try {
+        await casosRef.doc(currentPatient.id).update({ chat, chatNovoAt: agora() });
+        renderizarMensagensChat();
+      } catch(e) { console.error('Erro chat:', e); }
+    }
+
+    async function enviarMensagemCustom() {
+      const inp = document.getElementById('chatInputCustom');
+      if (!inp || !inp.value.trim()) return;
+      await enviarMensagemChat('💬 ' + inp.value.trim());
+      inp.value = '';
+    }
+
+    function renderizarMensagensChat() {
+      const lista = document.getElementById('listaMensagensChat');
+      if (!lista || !currentPatient) return;
+      const chat = currentPatient.chat || [];
+      if (chat.length === 0) {
+        lista.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:20px;">Nenhuma mensagem enviada.</p>';
+        return;
+      }
+      lista.innerHTML = [...chat].reverse().map(m => {
+        const hora = new Date(m.ts).toLocaleTimeString('pt-BR');
+        const cor = m.origem === 'SALA VERMELHA' ? 'var(--accent-red)' : m.origem === 'NAC' ? 'var(--accent-orange)' : 'var(--accent-green)';
+        return `<div style="padding:10px;border-radius:8px;background:var(--bg-card);margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="color:${cor};font-size:11px;font-weight:bold;">${m.origem}</span>
+            <span style="color:var(--text-secondary);font-size:11px;">${hora}</span>
+          </div>
+          <span style="font-size:13px;">${m.txt}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // ===== ALERTA DE CASO PARADO =====
+    let alertaParadoInterval = null;
+
+    function iniciarMonitoramentoParado() {
+      if (alertaParadoInterval) clearInterval(alertaParadoInterval);
+      alertaParadoInterval = setInterval(() => {
+        patients.forEach(p => {
+          if (p.status === 'FINALIZADO') return;
+          const ultimaAcao = p.unidadesAtualizadoAt || p.chatNovoAt || p.espChegouTime || p.espTime || p.nacTime || p.createdAt;
+          if (!ultimaAcao) return;
+          const ms = ultimaAcao.toMillis ? ultimaAcao.toMillis() : new Date(ultimaAcao).getTime();
+          const minutos = Math.floor((Date.now() - ms) / 60000);
+          if (minutos >= 8) {
+            mostrarAlertaParado(p, minutos);
+          }
+        });
+      }, 60000); // Verifica a cada 1 min
+    }
+
+    function mostrarAlertaParado(paciente, minutos) {
+      const banner = document.getElementById('bannerCasoParado');
+      if (!banner) return;
+      document.getElementById('textoCasoParado').textContent =
+        `⚠️ Caso ${paciente.id} sem atualização há ${minutos} min`;
+      banner.style.display = 'flex';
+    }
+
+    function fecharAlertaParado() {
+      const banner = document.getElementById('bannerCasoParado');
+      if (banner) banner.style.display = 'none';
+    }
+
+    // ===== CRONÔMETRO DE ALERTA PROGRESSIVO =====
+    function atualizarCronometroProgressivo(elementId, startTimeMs) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const diff = Math.floor((Date.now() - startTimeMs) / 1000);
+      const mins = Math.floor(diff / 60);
+      const secs = diff % 60;
+      const texto = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+      el.textContent = texto;
+      // Trocar cor conforme tempo
+      const container = el.closest('.big-timer') || el.parentElement;
+      if (diff < 300) { // < 5 min: verde
+        el.style.color = '#6bcb77';
+        if (container) container.style.borderColor = '#6bcb77';
+      } else if (diff < 600) { // 5-10 min: amarelo
+        el.style.color = '#ffd93d';
+        if (container) container.style.borderColor = '#ffd93d';
+      } else if (diff < 900) { // 10-15 min: laranja
+        el.style.color = 'var(--accent-orange)';
+        if (container) container.style.borderColor = 'var(--accent-orange)';
+      } else { // > 15 min: vermelho piscando
+        el.style.color = 'var(--accent-red)';
+        if (container) {
+          container.style.borderColor = 'var(--accent-red)';
+          container.style.animation = 'pulse 1s infinite';
+        }
+      }
+    }
+
+    // Sobrescrever startTimer para usar cronômetro progressivo
+    const _startTimerOriginal = startTimer;
+    function startTimer(elementId, startTime) {
+      if (timers[elementId]) clearInterval(timers[elementId]);
+      timers[elementId] = setInterval(() => {
+        atualizarCronometroProgressivo(elementId, startTime);
+      }, 1000);
+      atualizarCronometroProgressivo(elementId, startTime); // Atualizar imediatamente
+    }
+
 // ===== RELATÓRIO PDF =====
 function gerarRelatorioPDF(dados) {
   const { jsPDF } = window.jspdf;
@@ -2757,6 +3069,48 @@ function gerarRelatorioPDF(dados) {
     verificarSessao();
     console.log('✅ Script carregado completamente!');
   </script>
+
+  <!-- ===== MODAL HISTÓRICO DE AÇÕES ===== -->
+  <div id="modalHistorico" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9000; align-items:center; justify-content:center; padding:16px;">
+    <div style="background:var(--bg-card); border-radius:16px; width:100%; max-width:480px; max-height:80vh; display:flex; flex-direction:column;">
+      <div style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-size:15px;">📋 Histórico de Ações</h3>
+        <button onclick="fecharHistorico()" style="background:none;border:none;color:var(--text-primary);font-size:22px;cursor:pointer;">✕</button>
+      </div>
+      <div id="listaHistorico" style="overflow-y:auto; padding:16px; flex:1;"></div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL CHAT RÁPIDO ===== -->
+  <div id="modalChat" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9000; align-items:center; justify-content:center; padding:16px;">
+    <div style="background:var(--bg-card); border-radius:16px; width:100%; max-width:480px; max-height:85vh; display:flex; flex-direction:column;">
+      <div style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-size:15px;">💬 Chat Rápido — NAC / C.C.</h3>
+        <button onclick="fecharChat()" style="background:none;border:none;color:var(--text-primary);font-size:22px;cursor:pointer;">✕</button>
+      </div>
+      <!-- Mensagens recebidas -->
+      <div id="listaMensagensChat" style="overflow-y:auto; padding:16px; flex:1; max-height:220px;"></div>
+      <!-- Mensagens rápidas -->
+      <div style="padding:12px 16px; border-top:1px solid var(--border);">
+        <p style="color:var(--text-secondary); font-size:11px; margin-bottom:8px; font-weight:bold;">MENSAGENS RÁPIDAS:</p>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;">
+          ${(()=> ['✅ Especialista presente na sala','🚨 Necessidade urgente de hemoderivados','🩸 Solicitar mais 2 CH adicionais','🏥 CC pronto para receber paciente','⏳ Aguardando resultado de exames','🛗 Aguardando elevador/transporte','📞 Favor retornar ligação urgente','✅ Paciente estabilizado'].map(m =>
+            `<button onclick="enviarMensagemChat('${m}')" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">${m}</button>`
+          ).join(''))()}
+        </div>
+        <div style="display:flex; gap:8px;">
+          <input id="chatInputCustom" type="text" placeholder="Digitar mensagem..." style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-primary);font-size:13px;" onkeydown="if(event.key==='Enter') enviarMensagemCustom()">
+          <button onclick="enviarMensagemCustom()" style="padding:10px 16px;background:var(--accent-red);color:#fff;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">ENVIAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BANNER ALERTA CASO PARADO ===== -->
+  <div id="bannerCasoParado" style="display:none; position:fixed; top:0; left:0; right:0; z-index:8000; background:var(--accent-orange); padding:10px 16px; align-items:center; justify-content:space-between;">
+    <span id="textoCasoParado" style="color:#fff; font-weight:bold; font-size:13px;"></span>
+    <button onclick="fecharAlertaParado()" style="background:rgba(0,0,0,0.3);border:none;color:#fff;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;">FECHAR</button>
+  </div>
 
 </body>
 </html>
