@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NAC - Central de Regulação | PTM</title>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
@@ -932,14 +933,58 @@
                 <div class="time timer-value" data-start="${timerStart}">--:--</div>
               </div>
               
-              <!-- HEMODERIVADOS (se houver) -->
+              <!-- HEMODERIVADOS SOLICITADOS -->
               ${c.hemoderivadosSolicitados ? `
-                <div style="background: var(--accent-red)22; border: 1px solid var(--accent-red); border-radius: 8px; padding: 10px; margin-bottom: 15px; font-size: 11px;">
-                  <strong>🩸 Hemoderivados:</strong><br>
-                  ${c.hemoderivadosSolicitados}
+                <div style="background: var(--accent-red)22; border: 1px solid var(--accent-red); border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 11px;">
+                  <strong>🩸 Solicitados:</strong> ${c.hemoderivadosSolicitados}
                 </div>
               ` : ''}
-              
+
+              <!-- CONTADOR DE UNIDADES ADMINISTRADAS (tempo real) -->
+              ${c.horaInicioTransfusao ? (() => {
+                const adm = c.unidadesAdministradas || {};
+                const sol = c.hemoderivadosDetalhado || {};
+                const nomes = { hemacias:'CH', plasma:'PFC', plaquetas:'PLAQ', crioprecipitado:'CRIO' };
+                const cores = { hemacias:'#ff6b6b', plasma:'#ffd93d', plaquetas:'#6bcb77', crioprecipitado:'#a29bfe' };
+                let totalAdm = 0, totalSol = 0;
+                let itens = Object.keys(nomes).map(p => {
+                  const a = adm[p] || 0; const s = sol[p] || 0;
+                  totalAdm += a; totalSol += s;
+                  const cor = a >= s && s > 0 ? 'var(--accent-green)' : a > 0 ? '#ffd93d' : 'var(--text-secondary)';
+                  return `<span style="color:${cor};font-size:11px;margin-right:8px;">${nomes[p]}: <strong>${a}/${s}</strong></span>`;
+                }).join('');
+                const pct = totalSol > 0 ? Math.min(100, Math.round((totalAdm/totalSol)*100)) : 0;
+                const corBarra = pct >= 100 ? '#6bcb77' : pct >= 50 ? '#ffd93d' : '#ff6b6b';
+                return `<div style="background:var(--bg-primary);border-radius:8px;padding:10px;margin-bottom:10px;">
+                  <div style="font-size:10px;color:var(--text-secondary);margin-bottom:6px;font-weight:bold;">🩸 UNIDADES ADMINISTRADAS</div>
+                  <div style="margin-bottom:6px;">${itens}</div>
+                  <div style="background:var(--border);border-radius:4px;height:5px;">
+                    <div style="background:${corBarra};height:100%;width:${pct}%;border-radius:4px;transition:width 0.4s;"></div>
+                  </div>
+                  <div style="text-align:right;font-size:10px;color:var(--text-secondary);margin-top:3px;">${totalAdm}/${totalSol} un. (${pct}%)</div>
+                </div>`;
+              })() : ''}
+
+              <!-- CHAT — últimas mensagens -->
+              ${(c.chat && c.chat.length > 0) ? (() => {
+                const ultimas = [...c.chat].slice(-2).reverse();
+                return `<div style="background:var(--bg-primary);border-radius:8px;padding:10px;margin-bottom:10px;">
+                  <div style="font-size:10px;color:var(--text-secondary);margin-bottom:6px;font-weight:bold;">💬 ÚLTIMAS MENSAGENS</div>
+                  ${ultimas.map(m => {
+                    const hora = new Date(m.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+                    const cor = m.origem === 'SALA VERMELHA' ? 'var(--accent-red)' : m.origem === 'NAC' ? 'var(--accent-orange)' : 'var(--accent-green)';
+                    return `<div style="font-size:11px;padding:4px 0;border-bottom:1px solid var(--border);">
+                      <span style="color:${cor};font-weight:bold;">${m.origem}</span>
+                      <span style="color:var(--text-secondary);margin:0 4px;">${hora}</span>
+                      <span>${m.txt}</span>
+                    </div>`;
+                  }).join('')}
+                </div>`;
+              })() : ''}
+
+              <!-- ALERTA CASO PARADO -->
+              <div id="alerta_parado_${c.id}" style="display:none;background:var(--accent-orange);color:#fff;font-size:11px;font-weight:bold;padding:6px 10px;border-radius:6px;margin-bottom:10px;text-align:center;"></div>
+
               <!-- BOTÕES DE AÇÃO -->
               <div class="action-buttons">
                 ${!c.nacAck ? `
@@ -955,6 +1000,13 @@
                 ` : `
                   <button class="btn btn-ligar" disabled style="opacity: 0.5; background: var(--accent-green);">✅ LIGOU</button>
                 `}
+              </div>
+
+              <!-- BOTÕES SECUNDÁRIOS: Chat, Histórico, PDF -->
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;">
+                <button onclick="abrirChatNac('${c.id}')" style="padding:8px;background:var(--bg-primary);border:1px solid var(--accent-orange);border-radius:8px;color:var(--accent-orange);font-size:11px;cursor:pointer;font-weight:700;">💬 CHAT</button>
+                <button onclick="abrirHistoricoNac('${c.id}')" style="padding:8px;background:var(--bg-primary);border:1px solid var(--accent-green);border-radius:8px;color:var(--accent-green);font-size:11px;cursor:pointer;font-weight:700;">📋 HISTÓRICO</button>
+                <button onclick="gerarPDFNac('${c.id}')" style="padding:8px;background:var(--bg-primary);border:1px solid var(--accent-blue);border-radius:8px;color:var(--accent-blue);font-size:11px;cursor:pointer;font-weight:700;">📄 PDF</button>
               </div>
             </div>
           </div>
@@ -976,12 +1028,40 @@
     function atualizarTimers() {
       document.querySelectorAll('.timer-value[data-start]').forEach(el => {
         const startMs = parseInt(el.getAttribute('data-start'));
-        if (startMs) {
-          const diff = Math.floor((Date.now() - startMs) / 1000);
-          const mins = Math.floor(diff / 60);
-          const secs = diff % 60;
-          el.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        if (!startMs) return;
+        const diff = Math.floor((Date.now() - startMs) / 1000);
+        const mins = Math.floor(diff / 60);
+        const secs = diff % 60;
+        el.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+        // Cronômetro progressivo de cor
+        const container = el.closest('.big-timer') || el.parentElement;
+        if (diff < 300) {
+          el.style.color = 'var(--accent-green)';
+          if (container) container.style.borderColor = 'var(--accent-green)';
+        } else if (diff < 600) {
+          el.style.color = '#ffd93d';
+          if (container) container.style.borderColor = '#ffd93d';
+        } else if (diff < 900) {
+          el.style.color = 'var(--accent-orange)';
+          if (container) container.style.borderColor = 'var(--accent-orange)';
+        } else {
+          el.style.color = 'var(--accent-red)';
+          if (container) {
+            container.style.borderColor = 'var(--accent-red)';
+            container.style.animation = 'pulse 1s infinite';
+          }
         }
+      });
+      // Alerta de caso parado (8+ min sem ação)
+      casos.forEach(c => {
+        if (c.status === 'FINALIZADO') return;
+        const ultimaAcao = c.unidadesAtualizadoAt || c.chatNovoAt || c.espChegouTime || c.espTime || c.nacTime || c.createdAt;
+        if (!ultimaAcao) return;
+        const ms = ultimaAcao.toMillis ? ultimaAcao.toMillis() : new Date(ultimaAcao).getTime();
+        const minutos = Math.floor((Date.now() - ms) / 60000);
+        const banner = document.getElementById(`alerta_parado_${c.id}`);
+        if (banner) banner.style.display = minutos >= 8 ? 'block' : 'none';
+        if (banner) banner.textContent = `⚠️ Sem atualização há ${minutos} min`;
       });
     }
 
@@ -1046,6 +1126,175 @@ ${ondaStatus}
       window.open(url, '_blank');
     }
 
+    // ===== CHAT NAC =====
+    let chatCasoAtivo = null;
+
+    function abrirChatNac(id) {
+      chatCasoAtivo = id;
+      const modal = document.getElementById('modalChatNac');
+      if (!modal) return;
+      renderizarChatNac();
+      modal.style.display = 'flex';
+    }
+
+    function fecharChatNac() {
+      document.getElementById('modalChatNac').style.display = 'none';
+      chatCasoAtivo = null;
+    }
+
+    async function enviarMensagemNac(texto) {
+      if (!chatCasoAtivo || !texto) return;
+      const msg = { ts: new Date().toISOString(), txt: texto, origem: 'NAC' };
+      const caso = casos.find(c => c.id === chatCasoAtivo);
+      if (!caso) return;
+      const chat = caso.chat || [];
+      chat.push(msg);
+      try {
+        await casosRef.doc(chatCasoAtivo).update({ chat, chatNovoAt: agora() });
+        renderizarChatNac();
+      } catch(e) { console.error('Erro chat NAC:', e); }
+    }
+
+    async function enviarMensagemCustomNac() {
+      const inp = document.getElementById('chatInputNac');
+      if (!inp || !inp.value.trim()) return;
+      await enviarMensagemNac('💬 ' + inp.value.trim());
+      inp.value = '';
+    }
+
+    function renderizarChatNac() {
+      const lista = document.getElementById('listaChatNac');
+      if (!lista || !chatCasoAtivo) return;
+      const caso = casos.find(c => c.id === chatCasoAtivo);
+      const chat = caso?.chat || [];
+      if (chat.length === 0) {
+        lista.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:20px;">Sem mensagens.</p>';
+        return;
+      }
+      lista.innerHTML = [...chat].reverse().map(m => {
+        const hora = new Date(m.ts).toLocaleTimeString('pt-BR');
+        const cor = m.origem === 'SALA VERMELHA' ? 'var(--accent-red)' : m.origem === 'NAC' ? 'var(--accent-orange)' : 'var(--accent-green)';
+        return `<div style="padding:8px;border-radius:8px;background:var(--bg-card);margin-bottom:6px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+            <span style="color:${cor};font-size:11px;font-weight:bold;">${m.origem}</span>
+            <span style="color:var(--text-secondary);font-size:11px;">${hora}</span>
+          </div>
+          <span style="font-size:12px;">${m.txt}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // ===== HISTÓRICO NAC =====
+    function abrirHistoricoNac(id) {
+      const caso = casos.find(c => c.id === id);
+      if (!caso) return;
+      const modal = document.getElementById('modalHistoricoNac');
+      if (!modal) return;
+      const hist = caso.historico || [];
+      const lista = document.getElementById('listaHistoricoNac');
+      document.getElementById('tituloHistoricoNac').textContent = `📋 Histórico — ${caso.id}`;
+      if (lista) {
+        lista.innerHTML = hist.length === 0
+          ? '<p style="color:var(--text-secondary);text-align:center;padding:20px;">Nenhuma ação registrada.</p>'
+          : [...hist].reverse().map(h => {
+              const hora = new Date(h.ts).toLocaleTimeString('pt-BR');
+              return `<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+                <span style="color:var(--accent-orange);font-size:11px;min-width:55px;">${hora}</span>
+                <span style="font-size:12px;">${h.txt}</span>
+              </div>`;
+            }).join('');
+      }
+      modal.style.display = 'flex';
+    }
+
+    function fecharHistoricoNac() {
+      document.getElementById('modalHistoricoNac').style.display = 'none';
+    }
+
+    // ===== PDF NAC =====
+    function gerarPDFNac(id) {
+      const caso = casos.find(c => c.id === id);
+      if (!caso) return;
+      if (!window.jspdf) { alert('PDF indisponível. Verifique conexão.'); return; }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const VERMELHO = [180,0,0], PRETO = [30,30,30], CINZA = [100,100,100], CINZA_CLARO = [240,240,240];
+      let y = 15;
+
+      doc.setFillColor(...VERMELHO);
+      doc.rect(0,0,210,28,'F');
+      doc.setTextColor(255,255,255);
+      doc.setFontSize(16); doc.setFont('helvetica','bold');
+      doc.text('PROTOCOLO DE TRANSFUSÃO MACIÇA', 105, 11, {align:'center'});
+      doc.setFontSize(10); doc.setFont('helvetica','normal');
+      doc.text('Hospital Regional Vale do Jaguaribe — HRVJ / ISGH', 105, 18, {align:'center'});
+      doc.text(`Emitido pelo NAC em: ${new Date().toLocaleString('pt-BR')}`, 105, 24, {align:'center'});
+      y = 36;
+
+      function secao(t) {
+        doc.setFillColor(...CINZA_CLARO); doc.rect(10,y,190,7,'F');
+        doc.setTextColor(...VERMELHO); doc.setFontSize(10); doc.setFont('helvetica','bold');
+        doc.text(t,13,y+5); y+=10;
+      }
+      function linha(l,v,d=false) {
+        if(y>270){doc.addPage();y=15;}
+        doc.setTextColor(...CINZA); doc.setFontSize(9); doc.setFont('helvetica','normal');
+        doc.text(l+':',13,y);
+        doc.setTextColor(...PRETO); doc.setFont('helvetica',d?'bold':'normal');
+        doc.text(String(v||'—'),65,y); y+=6;
+      }
+      function ts(t) {
+        if(!t) return '—';
+        try { const d=t.toDate?t.toDate():new Date(t); return d.toLocaleTimeString('pt-BR'); } catch{return '—';}
+      }
+
+      secao('1. IDENTIFICAÇÃO');
+      linha('ID',caso.id,true); linha('Paciente',caso.ident); linha('Sexo',caso.sexo);
+      linha('Faixa Etária',caso.faixaEtaria); linha('Raça/Cor',caso.raca);
+      linha('Abertura',ts(caso.createdAt)); y+=2;
+
+      secao('2. CRITÉRIOS PTM');
+      ([...(caso.criterios||[]),(caso.criteriosOutros||[])].flat()).forEach((c,i)=>linha(`Critério ${i+1}`,c));
+      y+=2;
+
+      secao('3. ESPECIALISTAS');
+      linha('Especialidades',(caso.especialidades||[]).join(', ')||'—');
+      linha('Especialista Chegou',caso.espChegou?`SIM — ${ts(caso.espChegouTime)}`:'NÃO');
+      linha('NAC Confirmou',caso.nacAck?`SIM — ${ts(caso.nacAckTime)}`:'NÃO');
+      y+=2;
+
+      secao('4. HEMODERIVADOS');
+      linha('Decisão',caso.onda==='SIM'?'ONDA VERMELHA':'HEMOTRANSFUSÃO LOCAL',true);
+      const det=caso.hemoderivadosDetalhado||{};
+      linha('CH',det.hemacias??'—'); linha('PFC',det.plasma??'—');
+      linha('Plaquetas',det.plaquetas??'—'); linha('Crioprecipitado',det.crioprecipitado??'—');
+      const adm=caso.unidadesAdministradas||{};
+      linha('CH Administrado',adm.hemacias??'—'); linha('PFC Administrado',adm.plasma??'—');
+      linha('Plaq Administrado',adm.plaquetas??'—'); linha('Crio Administrado',adm.crioprecipitado??'—');
+      y+=2;
+
+      secao('5. LINHA DO TEMPO');
+      [{l:'Caso Aberto',t:caso.createdAt},{l:'NAC Acionado',t:caso.nacTime},
+       {l:'Especialistas',t:caso.espTime},{l:'Esp. Chegou',t:caso.espChegouTime},
+       {l:'Decisão Onda',t:caso.ondaTime},{l:'Transfusão',t:caso.horaInicioTransfusao},
+       {l:'Finalizado',t:caso.finalizadoAt}].filter(e=>e.t).forEach(e=>linha(e.l,ts(e.t)));
+      y+=2;
+
+      secao('6. AUDITORIA');
+      linha('Prontuário',caso.prontuario); linha('Nome',caso.nome);
+      linha('Médico',caso.medico); linha('Desfecho',caso.desfecho,true);
+
+      const total = doc.internal.getNumberOfPages();
+      for(let i=1;i<=total;i++){
+        doc.setPage(i);
+        doc.setDrawColor(...CINZA); doc.line(10,285,200,285);
+        doc.setFontSize(8); doc.setTextColor(...CINZA);
+        doc.text('PTM NAC — HRVJ/ISGH — Emitido automaticamente',10,290);
+        doc.text(`Página ${i} de ${total}`,200,290,{align:'right'});
+      }
+      doc.save(`PTM-NAC-${caso.id}-${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.pdf`);
+    }
+
     // ===== FUNÇÕES DE SISTEMA =====
     function iniciarSistema() {
       escutarCasos();
@@ -1058,6 +1307,43 @@ ${ondaStatus}
       iniciarSistema();
     }
   </script>
+
+  <!-- ===== MODAL CHAT NAC ===== -->
+  <div id="modalChatNac" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--bg-card);border-radius:16px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="margin:0;font-size:15px;">💬 Chat — Sala Vermelha / C.C.</h3>
+        <button onclick="fecharChatNac()" style="background:none;border:none;color:var(--text-primary);font-size:22px;cursor:pointer;">✕</button>
+      </div>
+      <div id="listaChatNac" style="overflow-y:auto;padding:16px;flex:1;max-height:240px;"></div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border);">
+        <p style="color:var(--text-secondary);font-size:11px;margin-bottom:8px;font-weight:bold;">MENSAGENS RÁPIDAS DO NAC:</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+          <button onclick="enviarMensagemNac('✅ NAC ciente — providências tomadas')" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">✅ NAC ciente</button>
+          <button onclick="enviarMensagemNac('📞 Especialista contatado — a caminho')" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">📞 Esp. contatado</button>
+          <button onclick="enviarMensagemNac('🏥 C.C. preparado para receber')" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">🏥 C.C. pronto</button>
+          <button onclick="enviarMensagemNac('🩸 Hemocentro acionado — bolsas a caminho')" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">🩸 Hemocentro acionado</button>
+          <button onclick="enviarMensagemNac('⏳ Aguardando confirmação do hemocentro')" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">⏳ Aguardando hemocentro</button>
+          <button onclick="enviarMensagemNac('🛗 Maca/elevador acionado')" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">🛗 Maca acionada</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input id="chatInputNac" type="text" placeholder="Mensagem do NAC..." style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-primary);font-size:13px;" onkeydown="if(event.key==='Enter') enviarMensagemCustomNac()">
+          <button onclick="enviarMensagemCustomNac()" style="padding:10px 16px;background:var(--accent-orange);color:#fff;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">ENVIAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL HISTÓRICO NAC ===== -->
+  <div id="modalHistoricoNac" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--bg-card);border-radius:16px;width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <h3 id="tituloHistoricoNac" style="margin:0;font-size:15px;">📋 Histórico</h3>
+        <button onclick="fecharHistoricoNac()" style="background:none;border:none;color:var(--text-primary);font-size:22px;cursor:pointer;">✕</button>
+      </div>
+      <div id="listaHistoricoNac" style="overflow-y:auto;padding:16px;flex:1;"></div>
+    </div>
+  </div>
 
 </body>
 </html>
