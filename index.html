@@ -2274,13 +2274,8 @@
         return;
       }
 
-      // ===== BLOQUEIO: Se Onda Vermelha, CC deve confirmar recebimento antes =====
-      if (currentPatient && currentPatient.onda === 'SIM') {
-        if (!currentPatient.ccRecebeuPaciente) {
-          alert('⚠️ BLOQUEIO DE SEGURANÇA\n\nO Centro Cirúrgico ainda não confirmou o RECEBIMENTO do paciente.\n\nAguarde a confirmação do C.C. antes de finalizar o protocolo.\n\n(O C.C. deve clicar em "PACIENTE RECEBIDO NO C.C." assim que o paciente chegar.)');
-          return;
-        }
-      }
+      // ===== NOTA: Para Onda Vermelha, a Sala Vermelha usa "Salvar Dados" e o C.C. finaliza =====
+      // Para outros desfechos, a Sala Vermelha finaliza diretamente
 
       try {
         // Buscar dados COMPLETOS do Firebase antes de finalizar
