@@ -334,9 +334,14 @@
       align-items: center;
       justify-content: center;
       gap: 0;
-      margin-bottom: 30px;
+      margin-bottom: 32px;
       width: 100%;
       max-width: 900px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px 24px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
     }
 
     .step {
@@ -345,69 +350,75 @@
       align-items: center;
       position: relative;
       flex: 1;
+      transition: transform 0.2s;
     }
 
+    .step:hover { transform: translateY(-2px); }
+
     .step-icon {
-      width: 50px;
-      height: 50px;
+      width: 54px;
+      height: 54px;
       border-radius: 50%;
-      background: var(--bg-card);
+      background: var(--bg-primary);
       border: 3px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 22px;
       transition: all 0.3s;
       position: relative;
       z-index: 2;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
 
     .step.completed .step-icon {
-      background: var(--accent-green);
+      background: linear-gradient(135deg, #27c75a, #30d158);
       border-color: var(--accent-green);
-      box-shadow: 0 0 20px var(--accent-green-glow);
+      box-shadow: 0 0 22px rgba(48,209,88,0.5), 0 2px 10px rgba(0,0,0,0.3);
     }
 
     .step.active .step-icon {
-      background: var(--accent-red);
+      background: linear-gradient(135deg, #e0203e, #ff2d55);
       border-color: var(--accent-red);
-      box-shadow: 0 0 25px var(--accent-red-glow);
+      box-shadow: 0 0 28px rgba(255,45,85,0.6), 0 2px 10px rgba(0,0,0,0.3);
       animation: pulse-glow 1.5s infinite;
     }
 
     @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 20px var(--accent-red-glow); }
-      50% { box-shadow: 0 0 40px var(--accent-red-glow); }
+      0%, 100% { box-shadow: 0 0 20px rgba(255,45,85,0.4), 0 2px 10px rgba(0,0,0,0.3); }
+      50% { box-shadow: 0 0 44px rgba(255,45,85,0.8), 0 2px 10px rgba(0,0,0,0.3); }
     }
 
     .step-label {
       font-size: 10px;
-      font-weight: 700;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.8px;
       color: var(--text-secondary);
       margin-top: 10px;
       text-align: center;
       max-width: 80px;
+      line-height: 1.3;
     }
 
-    .step.completed .step-label,
-    .step.active .step-label {
-      color: var(--text-primary);
-    }
+    .step.completed .step-label { color: var(--accent-green); }
+    .step.active .step-label { color: var(--accent-red); }
 
     .step-connector {
       flex: 1;
-      height: 3px;
+      height: 4px;
       background: var(--border);
-      margin: 0 -10px;
-      margin-top: -25px;
+      margin: 0 -8px;
+      margin-top: -28px;
       position: relative;
       z-index: 1;
+      border-radius: 2px;
+      transition: background 0.4s;
     }
 
     .step-connector.completed {
-      background: var(--accent-green);
+      background: linear-gradient(90deg, var(--accent-green), #27c75a);
+      box-shadow: 0 0 8px rgba(48,209,88,0.4);
     }
 
     /* ===== CARD PRINCIPAL ===== */
@@ -840,18 +851,18 @@
           <span style="font-size: 20px;">➕</span>
           NOVO PACIENTE
         </button>
-        <button id="btnAtivarAudio" onclick="ativarAudio()" style="width: 100%; margin-top: 10px; padding: 12px; background: var(--accent-orange); border: none; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; font-weight: 700;">
-          🔇 CLIQUE PARA ATIVAR ÁUDIO
-        </button>
         <button class="btn-limpar" onclick="forcarLimpeza()" style="width: 100%; margin-top: 10px; padding: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 12px; cursor: pointer;">
           🧹 FORÇAR LIMPEZA DE TELA
         </button>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr 44px; gap:8px; margin-top:10px; align-items:center;">
           <button onclick="abrirChat()" style="padding:10px; background:var(--bg-card); border:1px solid var(--accent-orange); border-radius:8px; color:var(--accent-orange); font-size:12px; cursor:pointer; font-weight:700;">
-            💬 CHAT NAC
+            💬 CHAT
           </button>
           <button onclick="abrirHistorico()" style="padding:10px; background:var(--bg-card); border:1px solid var(--accent-green); border-radius:8px; color:var(--accent-green); font-size:12px; cursor:pointer; font-weight:700;">
             📋 HISTÓRICO
+          </button>
+          <button id="btnAtivarAudio" onclick="ativarAudio()" title="Ativar áudio de alertas" style="width:44px; height:44px; border-radius:50%; background:var(--bg-primary); border:2px solid var(--accent-orange); color:var(--accent-orange); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.3s;">
+            🔇
           </button>
         </div>
       </div>
@@ -900,6 +911,12 @@
             <div class="icon">🏥</div>
             <h3>Nenhum paciente ativo</h3>
             <p>Clique em "Novo Paciente" para iniciar um protocolo PTM</p>
+          </div>
+          <!-- Botão PDF pós-finalização (oculto por padrão) -->
+          <div id="btnImprimirPDFFinal" style="display:none; margin-top:20px; justify-content:center;">
+            <button style="display:flex; align-items:center; gap:10px; padding:14px 28px; background:linear-gradient(135deg,#6f42c1,#bf5af2); border:none; border-radius:14px; color:#fff; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 6px 24px rgba(191,90,242,0.4); letter-spacing:0.5px;">
+              📄 IMPRIMIR PDF DO PROTOCOLO
+            </button>
           </div>
         </div>
 
@@ -1458,11 +1475,17 @@
             <button class="action-btn success" onclick="finalizarProtocolo()">
               🏁 FINALIZAR PROTOCOLO
             </button>
+            <button onclick="if(currentPatient){ gerarRelatorioPDF({...currentPatient}); }" style="width:100%;margin-top:10px;padding:14px;background:rgba(191,90,242,0.12);border:1px solid #bf5af2;border-radius:12px;color:#bf5af2;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">
+              📄 IMPRIMIR PDF (relatório atual)
+            </button>
           </div>
           
           <div id="btnAreaSalvar" style="display: none;">
             <button class="action-btn warning" onclick="salvarDadosAuditoria()">
               💾 SALVAR DADOS - AGUARDAR C.C.
+            </button>
+            <button onclick="if(currentPatient){ gerarRelatorioPDF({...currentPatient}); }" style="width:100%;margin-top:10px;padding:14px;background:rgba(191,90,242,0.12);border:1px solid #bf5af2;border-radius:12px;color:#bf5af2;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">
+              📄 IMPRIMIR PDF (relatório atual)
             </button>
             <p style="text-align: center; margin-top: 15px; color: var(--accent-orange); font-size: 13px;">
               ⚠️ Onda Vermelha ativa: o protocolo será encerrado pelo Centro Cirúrgico
@@ -1703,10 +1726,13 @@
         // Tocar bipe de confirmação
         tocarBipe();
         
-        // Atualizar botão
+        // Atualizar botão para ativo (verde, ícone ligado)
         const btn = document.getElementById('btnAtivarAudio');
-        btn.textContent = '🔊 ÁUDIO ATIVADO';
-        btn.style.background = 'var(--accent-green)';
+        btn.textContent = '🔊';
+        btn.style.borderColor = 'var(--accent-green)';
+        btn.style.color = 'var(--accent-green)';
+        btn.style.boxShadow = '0 0 12px rgba(48,209,88,0.4)';
+        btn.title = 'Áudio ativo';
         btn.onclick = null;
       } catch (e) {
         console.log('Erro ao ativar áudio:', e);
@@ -2298,11 +2324,21 @@
         };
         
         await enviarParaPlanilha(casoCompleto);
-        gerarRelatorioPDF(casoCompleto);
+        
+        // Guardar último caso finalizado para botão de PDF
+        window.ultimoCasoFinalizado = casoCompleto;
         
         currentPatient = null;
         showPanel('empty');
-        alert('✅ Protocolo finalizado com sucesso!\n\nDados salvos na planilha.');
+        
+        // Mostrar botão de imprimir PDF no empty state
+        const btnPDF = document.getElementById('btnImprimirPDFFinal');
+        if (btnPDF) {
+          btnPDF.style.display = 'flex';
+          btnPDF.onclick = () => gerarRelatorioPDF(window.ultimoCasoFinalizado);
+        }
+        
+        alert('✅ Protocolo finalizado com sucesso!\n\nDados salvos na planilha.\n\nClique em "Imprimir PDF" para baixar o relatório.');
       } catch (error) {
         console.error('Erro ao finalizar:', error);
         alert('Erro ao finalizar. Tente novamente.');
