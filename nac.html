@@ -809,6 +809,8 @@
     }, 3000);
 
     // ===== ESCUTAR FIREBASE =====
+    let chatNacModalAberto = false;
+
     function escutarCasos() {
       if (unsubscribe) unsubscribe();
       
@@ -824,6 +826,8 @@
           renderCards();
           atualizarStatus();
           if (typeof verificarNovasMensagensNac === 'function') verificarNovasMensagensNac(casos);
+          // Atualizar chat em tempo real se modal estiver aberto
+          if (chatNacModalAberto && chatCasoAtivo) renderizarChatNac();
         }, (error) => {
           console.error('Erro ao escutar casos:', error);
         });
@@ -1132,13 +1136,18 @@ ${ondaStatus}
 
     function abrirChatNac(id) {
       chatCasoAtivo = id;
+      chatNacModalAberto = true;
       const modal = document.getElementById('modalChatNac');
       if (!modal) return;
+      // Limpar badge ao abrir
+      const badge = document.getElementById('chatBadgeNac');
+      if (badge) badge.style.display = 'none';
       renderizarChatNac();
       modal.style.display = 'flex';
     }
 
     function fecharChatNac() {
+      chatNacModalAberto = false;
       document.getElementById('modalChatNac').style.display = 'none';
       chatCasoAtivo = null;
     }
@@ -1401,9 +1410,14 @@ ${ondaStatus}
       });
       if (maisRecente.chatNovoAt && maisRecente.chatNovoAt !== ultimoChatNacAt) {
         if (ultimoChatNacAt !== null) {
-          tocarSomChatNac();
-          const badge = document.getElementById('chatBadgeNac');
-          if (badge) { badge.style.display = 'flex'; badge.textContent = '!'; }
+          // Só toca som se a mensagem não foi do próprio NAC
+          const chat = maisRecente.chat || [];
+          const ultima = chat[chat.length - 1];
+          if (ultima && ultima.origem !== 'NAC') {
+            tocarSomChatNac();
+            const badge = document.getElementById('chatBadgeNac');
+            if (badge) { badge.style.display = 'flex'; badge.textContent = '!'; }
+          }
         }
         ultimoChatNacAt = maisRecente.chatNovoAt;
       }
