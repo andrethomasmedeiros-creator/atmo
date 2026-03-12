@@ -3073,21 +3073,21 @@ function gerarRelatorioPDF(dados) {
 
   <!-- ===== MODAL CHAT RÁPIDO ===== -->
   <div id="modalChat" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9000; align-items:center; justify-content:center; padding:16px;">
-    <div style="background:var(--bg-card); border-radius:16px; width:100%; max-width:480px; max-height:85vh; display:flex; flex-direction:column;">
+    <div style="background:var(--bg-card); border-radius:16px; width:100%; max-width:620px; max-height:92vh; display:flex; flex-direction:column;">
       <div style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="margin:0; font-size:15px;">💬 Chat — Sala Vermelha</h3>
+        <h3 style="margin:0; font-size:18px;">💬 Chat — Sala Vermelha</h3>
         <button onclick="fecharChat()" style="background:none;border:none;color:var(--text-primary);font-size:22px;cursor:pointer;">✕</button>
       </div>
-      <div id="listaMensagensChat" style="overflow-y:auto; padding:16px; flex:1; max-height:260px;"></div>
+      <div id="listaMensagensChat" style="overflow-y:auto; padding:16px; flex:1; max-height:400px;"></div>
       <div style="padding:10px 16px; border-top:1px solid var(--border);">
-        <p style="color:var(--text-secondary); font-size:10px; margin-bottom:6px; font-weight:bold; letter-spacing:0.5px;">ATALHOS RÁPIDOS:</p>
-        <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:10px;">
-          <span onclick="enviarMensagemChat('🩸 Solicitar hemoderivados urgente')" style="color:var(--accent-red);font-size:12px;cursor:pointer;padding:4px 0;border-bottom:1px solid var(--border);">🩸 Solicitar hemoderivados urgente</span>
-          <span onclick="enviarMensagemChat('🏥 Acionar transporte para C.C.')" style="color:var(--accent-orange);font-size:12px;cursor:pointer;padding:4px 0;border-bottom:1px solid var(--border);">🏥 Acionar transporte para C.C.</span>
-          <span onclick="enviarMensagemChat('✅ Paciente estabilizado')" style="color:var(--accent-green);font-size:12px;cursor:pointer;padding:4px 0;">✅ Paciente estabilizado</span>
+        <p style="color:var(--text-secondary); font-size:12px; margin-bottom:8px; font-weight:bold; letter-spacing:0.5px;">ATALHOS RÁPIDOS:</p>
+        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;">
+          <span onclick="enviarMensagemChat('🩸 Solicitar hemoderivados urgente')" style="color:var(--accent-red);font-size:15px;cursor:pointer;padding:4px 0;border-bottom:1px solid var(--border);">🩸 Solicitar hemoderivados urgente</span>
+          <span onclick="enviarMensagemChat('🏥 Acionar transporte para C.C.')" style="color:var(--accent-orange);font-size:15px;cursor:pointer;padding:4px 0;border-bottom:1px solid var(--border);">🏥 Acionar transporte para C.C.</span>
+          <span onclick="enviarMensagemChat('✅ Paciente estabilizado')" style="color:var(--accent-green);font-size:15px;cursor:pointer;padding:4px 0;">✅ Paciente estabilizado</span>
         </div>
         <div style="display:flex; gap:8px;">
-          <input id="chatInputCustom" type="text" placeholder="Digitar mensagem..." style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-primary);font-size:13px;" onkeydown="if(event.key==='Enter') enviarMensagemCustom()">
+          <input id="chatInputCustom" type="text" placeholder="Digitar mensagem..." style="flex:1;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-primary);font-size:16px;" onkeydown="if(event.key==='Enter') enviarMensagemCustom()">
           <button onclick="enviarMensagemCustom()" style="padding:10px 16px;background:var(--accent-red);color:#fff;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">ENVIAR</button>
         </div>
       </div>
