@@ -1502,6 +1502,39 @@
     updateClock();
 
     // ===== ESCUTAR FIREBASE EM TEMPO REAL =====
+    let ultimoChatVermelhaAt = null;
+
+    function verificarNovasMensagensVermelha(patientsNovos) {
+      if (!patientsNovos || patientsNovos.length === 0) return;
+      // Pega o chatNovoAt mais recente entre todos os pacientes ativos
+      const maisRecente = patientsNovos.reduce((a, b) => {
+        const ta = a.chatNovoAt || '';
+        const tb = b.chatNovoAt || '';
+        return tb > ta ? b : a;
+      });
+      if (maisRecente.chatNovoAt && maisRecente.chatNovoAt !== ultimoChatVermelhaAt) {
+        if (ultimoChatVermelhaAt !== null) {
+          // Só toca som se não foi a própria Sala Vermelha que enviou
+          const chat = maisRecente.chat || [];
+          const ultima = chat[chat.length - 1];
+          if (ultima && ultima.origem !== 'SALA VERMELHA') {
+            tocarSomChat();
+            const badge = document.getElementById('chatBadge');
+            if (badge) {
+              badge.style.display = 'flex';
+              badgeCount = (badgeCount || 0) + 1;
+              badge.textContent = badgeCount;
+            }
+          }
+          // Se o chat estiver aberto, re-renderizar em tempo real
+          if (chatAberto && currentPatient && currentPatient.id === maisRecente.id) {
+            renderizarMensagensChat();
+          }
+        }
+        ultimoChatVermelhaAt = maisRecente.chatNovoAt;
+      }
+    }
+
     function escutarCasos() {
       if (unsubscribe) unsubscribe();
       
@@ -1514,12 +1547,15 @@
             patients.push({ id: doc.id, ...doc.data() });
           });
           renderPatients();
+          verificarNovasMensagensVermelha(patients);
           
           // Atualizar currentPatient se ainda existe
           if (currentPatient) {
             const updated = patients.find(p => p.id === currentPatient.id);
             if (updated) {
               currentPatient = updated; // Atualiza com dados mais recentes
+              // Se chat aberto, re-renderizar automaticamente
+              if (chatAberto) renderizarMensagensChat();
             } else {
               // Paciente foi finalizado
               currentPatient = null;
@@ -1530,6 +1566,39 @@
           console.error('Erro ao escutar casos:', error);
         });
     }
+
+    // ===== ESCUTAR CHAT GLOBAL (independente de caso ativo) =====
+    // Escuta a coleção 'chat_geral' para mensagens sem caso aberto
+    let unsubscribeChatGeral = null;
+    let ultimoChatGeralAt = null;
+
+    function escutarChatGeral() {
+      if (unsubscribeChatGeral) unsubscribeChatGeral();
+      try {
+        unsubscribeChatGeral = db.collection('chat_geral')
+          .orderBy('ts', 'desc')
+          .limit(50)
+          .onSnapshot((snapshot) => {
+            const msgs = [];
+            snapshot.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
+            chatGeralMensagens = msgs.reverse();
+            // Notificar se nova mensagem de outra origem
+            if (msgs.length > 0) {
+              const ultima = msgs[msgs.length - 1];
+              const tsAtual = ultima.ts;
+              if (ultimoChatGeralAt !== null && tsAtual !== ultimoChatGeralAt && ultima.origem !== 'SALA VERMELHA') {
+                tocarSomChat();
+                const badge = document.getElementById('chatBadge');
+                if (badge) { badge.style.display = 'flex'; badgeCount = (badgeCount || 0) + 1; badge.textContent = badgeCount; }
+              }
+              ultimoChatGeralAt = tsAtual;
+              if (chatAberto) renderizarMensagensChat();
+            }
+          }, (err) => { console.log('Chat geral não disponível:', err); });
+      } catch(e) { console.log('Chat geral não disponível'); }
+    }
+
+    let chatGeralMensagens = [];
 
     // ===== NAVEGAÇÃO DE PAINÉIS =====
     function showPanel(panelId) {
@@ -2179,6 +2248,14 @@
         return;
       }
 
+      // ===== BLOQUEIO: Se Onda Vermelha, CC deve confirmar recebimento antes =====
+      if (currentPatient && currentPatient.onda === 'SIM') {
+        if (!currentPatient.ccRecebeuPaciente) {
+          alert('⚠️ BLOQUEIO DE SEGURANÇA\n\nO Centro Cirúrgico ainda não confirmou o RECEBIMENTO do paciente.\n\nAguarde a confirmação do C.C. antes de finalizar o protocolo.\n\n(O C.C. deve clicar em "PACIENTE RECEBIDO NO C.C." assim que o paciente chegar.)');
+          return;
+        }
+      }
+
       try {
         // Buscar dados COMPLETOS do Firebase antes de finalizar
         const casoDoc = await casosRef.doc(currentPatient.id).get();
@@ -2676,6 +2753,7 @@
     function iniciarSistema() {
       showPanel('empty');
       escutarCasos();
+      escutarChatGeral();
       iniciarMonitoramentoParado();
     }
     // ===== CONTADOR DE UNIDADES =====
@@ -2783,17 +2861,23 @@
     }
 
     async function enviarMensagemChat(texto) {
-      if (!currentPatient || !texto) return;
+      if (!texto) return;
       const msg = {
         ts: new Date().toISOString(),
         txt: texto,
         origem: 'SALA VERMELHA'
       };
-      const chat = currentPatient.chat || [];
-      chat.push(msg);
-      currentPatient.chat = chat;
       try {
-        await casosRef.doc(currentPatient.id).update({ chat, chatNovoAt: agora() });
+        if (currentPatient) {
+          // Modo normal: caso ativo
+          const chat = currentPatient.chat || [];
+          chat.push(msg);
+          currentPatient.chat = chat;
+          await casosRef.doc(currentPatient.id).update({ chat, chatNovoAt: agora() });
+        } else {
+          // Modo sem caso: chat geral
+          await db.collection('chat_geral').add({ ...msg, chatNovoAt: new Date().toISOString() });
+        }
         renderizarMensagensChat();
       } catch(e) { console.error('Erro chat:', e); }
     }
@@ -2807,16 +2891,31 @@
 
     function renderizarMensagensChat() {
       const lista = document.getElementById('listaMensagensChat');
-      if (!lista || !currentPatient) return;
-      const chat = currentPatient.chat || [];
+      if (!lista) return;
+      
+      let chat = [];
+      if (currentPatient) {
+        chat = currentPatient.chat || [];
+      } else {
+        // Sem caso ativo: mostrar chat geral
+        chat = chatGeralMensagens || [];
+      }
+      
+      const titulo = document.getElementById('chatTituloContexto');
+      if (titulo) {
+        titulo.textContent = currentPatient ? `Caso: ${currentPatient.id}` : '📡 Canal Geral (sem caso ativo)';
+      }
+      
       if (chat.length === 0) {
-        lista.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:20px;">Nenhuma mensagem enviada.</p>';
+        lista.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:20px;">Nenhuma mensagem ainda. Use este canal para comunicação geral.</p>';
         return;
       }
+      const eraAbaixo = lista.scrollTop + lista.clientHeight >= lista.scrollHeight - 20;
       lista.innerHTML = [...chat].reverse().map(m => {
         const hora = new Date(m.ts).toLocaleTimeString('pt-BR');
         const cor = m.origem === 'SALA VERMELHA' ? 'var(--accent-red)' : m.origem === 'NAC' ? 'var(--accent-orange)' : 'var(--accent-green)';
-        return `<div style="padding:10px;border-radius:8px;background:var(--bg-card);margin-bottom:8px;">
+        const ehMeu = m.origem === 'SALA VERMELHA';
+        return `<div style="padding:10px;border-radius:8px;background:${ehMeu ? 'rgba(255,45,85,0.08)' : 'var(--bg-card)'};margin-bottom:8px;border:1px solid ${ehMeu ? 'rgba(255,45,85,0.2)' : 'transparent'};">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
             <span style="color:${cor};font-size:11px;font-weight:bold;">${m.origem}</span>
             <span style="color:var(--text-secondary);font-size:11px;">${hora}</span>
@@ -2824,6 +2923,7 @@
           <span style="font-size:13px;">${m.txt}</span>
         </div>`;
       }).join('');
+      // Manter scroll no topo (lista invertida)
     }
 
     // ===== ALERTA DE CASO PARADO =====
@@ -3075,7 +3175,10 @@ function gerarRelatorioPDF(dados) {
   <div id="modalChat" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9000; align-items:center; justify-content:center; padding:16px;">
     <div style="background:var(--bg-card); border-radius:16px; width:100%; max-width:620px; max-height:92vh; display:flex; flex-direction:column;">
       <div style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="margin:0; font-size:18px;">💬 Chat — Sala Vermelha</h3>
+        <div>
+          <h3 style="margin:0; font-size:18px;">💬 Chat — Sala Vermelha</h3>
+          <span id="chatTituloContexto" style="font-size:11px;color:var(--text-secondary);"></span>
+        </div>
         <button onclick="fecharChat()" style="background:none;border:none;color:var(--text-primary);font-size:22px;cursor:pointer;">✕</button>
       </div>
       <div id="listaMensagensChat" style="overflow-y:auto; padding:16px; flex:1; max-height:400px;"></div>
@@ -3123,15 +3226,25 @@ function gerarRelatorioPDF(dados) {
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + 0.4);
+        // segundo bipe
+        setTimeout(() => {
+          try {
+            const ctx2 = new (window.AudioContext || window.webkitAudioContext)();
+            const o2 = ctx2.createOscillator(); const g2 = ctx2.createGain();
+            o2.connect(g2); g2.connect(ctx2.destination);
+            o2.frequency.setValueAtTime(1100, ctx2.currentTime);
+            g2.gain.setValueAtTime(0.3, ctx2.currentTime);
+            g2.gain.exponentialRampToValueAtTime(0.001, ctx2.currentTime + 0.3);
+            o2.start(ctx2.currentTime); o2.stop(ctx2.currentTime + 0.3);
+          } catch(e) {}
+        }, 180);
       } catch(e) {}
     }
 
     // Controle de badge e notificação no botão flutuante
-    let ultimoChatNovoAt = null;
     let chatAberto = false;
     let badgeCount = 0;
 
-    const _abrirChatOriginal = window.abrirChat;
     function abrirChat() {
       chatAberto = true;
       badgeCount = 0;
