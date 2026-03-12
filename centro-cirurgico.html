@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Centro Cirúrgico | PTM Sala Vermelha</title>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
@@ -757,25 +758,68 @@
               </div>
               
               <div class="timer-section">
+                <div style="font-size:10px;color:var(--text-secondary);margin-bottom:4px;">⏱ Tempo em Preparo</div>
                 <div class="timer-value ${!reconhecido ? 'waiting' : ''}" data-start="${reconhecido && c.ccAckTime ? (c.ccAckTime.toMillis ? c.ccAckTime.toMillis() : c.ccAckTime) : ''}">
                   ${reconhecido ? '--:--' : '⏳'}
                 </div>
               </div>
-              
+
+              <!-- STATUS DE TRANSPORTE PROGRESSIVO -->
+              <div style="background:var(--bg-primary);border-radius:10px;padding:12px;margin:12px 0;">
+                <div style="font-size:10px;color:var(--text-secondary);font-weight:bold;margin-bottom:8px;">🚑 STATUS DO TRANSPORTE</div>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                  ${[
+                    { label:'Maca Acionada', campo: c.transpAcionadoTime, icone:'🔔' },
+                    { label:'Maca na Sala',  campo: c.transpChegouTime,   icone:'🛏️' },
+                    { label:'Saiu da Sala',  campo: c.transpSaidaSalaTime, icone:'🚑' },
+                    { label:'No C.C.',       campo: c.ccFinalizadoTime,    icone:'🏥' }
+                  ].map((s,i) => {
+                    const ativo = !!s.campo;
+                    const corFundo = ativo ? 'var(--accent-green)22' : 'var(--bg-secondary)';
+                    const corBorda = ativo ? 'var(--accent-green)' : 'var(--border)';
+                    const corTexto = ativo ? 'var(--accent-green)' : 'var(--text-secondary)';
+                    return `<div style="flex:1;min-width:70px;background:${corFundo};border:1px solid ${corBorda};border-radius:6px;padding:6px;text-align:center;">
+                      <div style="font-size:16px;">${s.icone}</div>
+                      <div style="font-size:9px;color:${corTexto};font-weight:bold;margin-top:2px;">${s.label}</div>
+                    </div>`;
+                  }).join('')}
+                </div>
+              </div>
+
               <div class="info-grid">
                 <div class="info-item">
                   <div class="label">Especialidade</div>
                   <div class="value">${(c.especialidades || []).join(' • ') || '-'}</div>
                 </div>
                 <div class="info-item">
-                  <div class="label">Transporte</div>
-                  <div class="value">${c.transpSaidaSalaTime ? '🚑 A CAMINHO' : (c.transpChegouTime ? '🛏️ MACA NA SALA' : '⏳ AGUARDANDO')}</div>
+                  <div class="label">Cirurgião / Esp.</div>
+                  <div class="value">${c.espChegou ? '✅ PRESENTE' : (c.espTime ? '⏳ AGUARDANDO' : '—')}</div>
                 </div>
                 <div class="info-item">
                   <div class="label">Auditoria</div>
                   <div class="value">${c.dadosAuditoriaPreenchidos || c.prontuario ? '✅ PREENCHIDO' : '⏳ PENDENTE'}</div>
                 </div>
               </div>
+
+              <!-- CHAT — últimas mensagens -->
+              ${(c.chat && c.chat.length > 0) ? (() => {
+                const ultimas = [...c.chat].slice(-2).reverse();
+                return `<div style="background:var(--bg-primary);border-radius:8px;padding:10px;margin:10px 0;">
+                  <div style="font-size:10px;color:var(--text-secondary);margin-bottom:6px;font-weight:bold;">💬 ÚLTIMAS MENSAGENS</div>
+                  ${ultimas.map(m => {
+                    const hora = new Date(m.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+                    const cor = m.origem==='SALA VERMELHA' ? '#ff2d55' : m.origem==='NAC' ? '#ff9500' : '#30d158';
+                    return `<div style="font-size:11px;padding:4px 0;border-bottom:1px solid var(--border);">
+                      <span style="color:${cor};font-weight:bold;">${m.origem}</span>
+                      <span style="color:var(--text-secondary);margin:0 4px;">${hora}</span>
+                      <span>${m.txt}</span>
+                    </div>`;
+                  }).join('')}
+                </div>`;
+              })() : ''}
+
+              <!-- ALERTA CASO PARADO -->
+              <div id="alerta_cc_parado_${c.id}" style="display:none;background:#ff9500;color:#fff;font-size:11px;font-weight:bold;padding:6px 10px;border-radius:6px;margin-bottom:10px;text-align:center;"></div>
               
               <div class="action-buttons">
                 ${!reconhecido ? `
@@ -794,6 +838,13 @@
                     </button>
                   `}
                 `}
+              </div>
+
+              <!-- BOTÕES SECUNDÁRIOS -->
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;">
+                <button onclick="abrirChatCC('${c.id}')" style="padding:8px;background:var(--bg-primary);border:1px solid #30d158;border-radius:8px;color:#30d158;font-size:11px;cursor:pointer;font-weight:700;">💬 CHAT</button>
+                <button onclick="abrirHistoricoCC('${c.id}')" style="padding:8px;background:var(--bg-primary);border:1px solid #0a84ff;border-radius:8px;color:#0a84ff;font-size:11px;cursor:pointer;font-weight:700;">📋 HISTÓRICO</button>
+                <button onclick="gerarPDFCC('${c.id}')" style="padding:8px;background:var(--bg-primary);border:1px solid #bf5af2;border-radius:8px;color:#bf5af2;font-size:11px;cursor:pointer;font-weight:700;">📄 PDF</button>
               </div>
             </div>
             
@@ -825,11 +876,28 @@
     function atualizarTimers() {
       document.querySelectorAll('.timer-value[data-start]').forEach(el => {
         const startMs = parseInt(el.getAttribute('data-start'));
-        if (startMs) {
-          const diff = Math.floor((Date.now() - startMs) / 1000);
-          const mins = Math.floor(diff / 60);
-          const secs = diff % 60;
-          el.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        if (!startMs) return;
+        const diff = Math.floor((Date.now() - startMs) / 1000);
+        const mins = Math.floor(diff / 60);
+        const secs = diff % 60;
+        el.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+        // Cor progressiva
+        if (diff < 300)      { el.style.color = '#30d158'; }
+        else if (diff < 600) { el.style.color = '#ffd93d'; }
+        else if (diff < 900) { el.style.color = '#ff9500'; }
+        else                 { el.style.color = '#ff2d55'; el.style.animation = 'pulse 1s infinite'; }
+      });
+      // Alerta caso parado no C.C. (sem atualização 8+ min)
+      casos.forEach(c => {
+        if (c.status === 'FINALIZADO') return;
+        const ultima = c.ccAckTime || c.chatNovoAt || c.espChegouTime || c.createdAt;
+        if (!ultima) return;
+        const ms = ultima.toMillis ? ultima.toMillis() : new Date(ultima).getTime();
+        const min = Math.floor((Date.now() - ms) / 60000);
+        const banner = document.getElementById(`alerta_cc_parado_${c.id}`);
+        if (banner) {
+          banner.style.display = min >= 8 ? 'block' : 'none';
+          if (min >= 8) banner.textContent = `⚠️ Aguardando atualização há ${min} min`;
         }
       });
     }
@@ -1003,6 +1071,172 @@
       }
     }
 
+    // ===== CHAT CENTRO CIRÚRGICO =====
+    let chatCCAtivo = null;
+
+    function abrirChatCC(id) {
+      chatCCAtivo = id;
+      const modal = document.getElementById('modalChatCC');
+      if (!modal) return;
+      renderizarChatCC();
+      modal.style.display = 'flex';
+    }
+
+    function fecharChatCC() {
+      document.getElementById('modalChatCC').style.display = 'none';
+      chatCCAtivo = null;
+    }
+
+    async function enviarMensagemCC(texto) {
+      if (!chatCCAtivo || !texto) return;
+      const caso = casos.find(c => c.id === chatCCAtivo);
+      if (!caso) return;
+      const msg = { ts: new Date().toISOString(), txt: texto, origem: 'CENTRO CIRÚRGICO' };
+      const chat = caso.chat || [];
+      chat.push(msg);
+      try {
+        await casosRef.doc(chatCCAtivo).update({ chat, chatNovoAt: agora() });
+        renderizarChatCC();
+      } catch(e) { console.error('Erro chat CC:', e); }
+    }
+
+    async function enviarMensagemCustomCC() {
+      const inp = document.getElementById('chatInputCC');
+      if (!inp || !inp.value.trim()) return;
+      await enviarMensagemCC('💬 ' + inp.value.trim());
+      inp.value = '';
+    }
+
+    function renderizarChatCC() {
+      const lista = document.getElementById('listaChatCC');
+      if (!lista || !chatCCAtivo) return;
+      const caso = casos.find(c => c.id === chatCCAtivo);
+      const chat = caso?.chat || [];
+      if (chat.length === 0) {
+        lista.innerHTML = '<p style="color:#8888a0;text-align:center;padding:20px;">Sem mensagens.</p>';
+        return;
+      }
+      lista.innerHTML = [...chat].reverse().map(m => {
+        const hora = new Date(m.ts).toLocaleTimeString('pt-BR');
+        const cor = m.origem==='SALA VERMELHA' ? '#ff2d55' : m.origem==='NAC' ? '#ff9500' : '#30d158';
+        return `<div style="padding:8px;border-radius:8px;background:#1a1a24;margin-bottom:6px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+            <span style="color:${cor};font-size:11px;font-weight:bold;">${m.origem}</span>
+            <span style="color:#8888a0;font-size:11px;">${hora}</span>
+          </div>
+          <span style="font-size:12px;">${m.txt}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // ===== HISTÓRICO CC =====
+    function abrirHistoricoCC(id) {
+      const caso = casos.find(c => c.id === id);
+      if (!caso) return;
+      const modal = document.getElementById('modalHistoricoCC');
+      if (!modal) return;
+      const hist = caso.historico || [];
+      document.getElementById('tituloHistoricoCC').textContent = `📋 Histórico — ${caso.id}`;
+      const lista = document.getElementById('listaHistoricoCC');
+      if (lista) {
+        lista.innerHTML = hist.length === 0
+          ? '<p style="color:#8888a0;text-align:center;padding:20px;">Nenhuma ação registrada.</p>'
+          : [...hist].reverse().map(h => {
+              const hora = new Date(h.ts).toLocaleTimeString('pt-BR');
+              return `<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #2a2a3a;">
+                <span style="color:#30d158;font-size:11px;min-width:55px;">${hora}</span>
+                <span style="font-size:12px;">${h.txt}</span>
+              </div>`;
+            }).join('');
+      }
+      modal.style.display = 'flex';
+    }
+
+    function fecharHistoricoCC() {
+      document.getElementById('modalHistoricoCC').style.display = 'none';
+    }
+
+    // ===== PDF CENTRO CIRÚRGICO =====
+    function gerarPDFCC(id) {
+      const caso = casos.find(c => c.id === id);
+      if (!caso) return;
+      if (!window.jspdf) { alert('PDF indisponível. Verifique conexão.'); return; }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const VERDE = [0,120,80], PRETO = [30,30,30], CINZA = [100,100,100], CINZA_CLARO = [240,240,240];
+      let y = 15;
+
+      // Cabeçalho verde (CC)
+      doc.setFillColor(...VERDE);
+      doc.rect(0,0,210,28,'F');
+      doc.setTextColor(255,255,255);
+      doc.setFontSize(16); doc.setFont('helvetica','bold');
+      doc.text('PROTOCOLO DE TRANSFUSÃO MACIÇA', 105, 11, {align:'center'});
+      doc.setFontSize(10); doc.setFont('helvetica','normal');
+      doc.text('Centro Cirúrgico — HRVJ / ISGH', 105, 18, {align:'center'});
+      doc.text(`Emitido pelo C.C. em: ${new Date().toLocaleString('pt-BR')}`, 105, 24, {align:'center'});
+      y = 36;
+
+      function secao(t) {
+        doc.setFillColor(...CINZA_CLARO); doc.rect(10,y,190,7,'F');
+        doc.setTextColor(...VERDE); doc.setFontSize(10); doc.setFont('helvetica','bold');
+        doc.text(t,13,y+5); y+=10;
+      }
+      function linha(l,v,destaque=false) {
+        if(y>270){doc.addPage();y=15;}
+        doc.setTextColor(...CINZA); doc.setFontSize(9); doc.setFont('helvetica','normal');
+        doc.text(l+':',13,y);
+        doc.setTextColor(...PRETO); doc.setFont('helvetica',destaque?'bold':'normal');
+        doc.text(String(v||'—'),65,y); y+=6;
+      }
+      function ts(t) {
+        if(!t) return '—';
+        try { const d=t.toDate?t.toDate():new Date(t); return d.toLocaleTimeString('pt-BR'); } catch{return '—';}
+      }
+
+      secao('1. IDENTIFICAÇÃO');
+      linha('ID',caso.id,true); linha('Paciente',caso.ident);
+      linha('Sexo',caso.sexo); linha('Faixa Etária',caso.faixaEtaria);
+      linha('Abertura',ts(caso.createdAt)); y+=2;
+
+      secao('2. CRITÉRIOS PTM');
+      (caso.criterios||[]).forEach((cr,i)=>linha(`Critério ${i+1}`,cr));
+      y+=2;
+
+      secao('3. ESPECIALISTAS');
+      linha('Especialidades',(caso.especialidades||[]).join(', ')||'—');
+      linha('Cirurgião Chegou',caso.espChegou?`SIM — ${ts(caso.espChegouTime)}`:'NÃO');
+      y+=2;
+
+      secao('4. TRANSPORTE — LINHA DO TEMPO');
+      linha('Maca Acionada',ts(caso.transpAcionadoTime));
+      linha('Maca na Sala',ts(caso.transpChegouTime));
+      linha('Saiu da Sala Vermelha',ts(caso.transpSaidaSalaTime));
+      linha('Paciente no C.C.',ts(caso.ccFinalizadoTime));
+      if (caso.tempoSaidaChegadaCC) linha('Tempo Saída→C.C.',caso.tempoSaidaChegadaCC+'min',true);
+      y+=2;
+
+      secao('5. AUDITORIA');
+      linha('Prontuário',caso.prontuario);
+      linha('Nome',caso.nome); linha('Médico PTM',caso.medico);
+      linha('Desfecho',caso.desfecho||'Encerrado no C.C.',true);
+      y+=2;
+
+      secao('6. STATUS C.C.');
+      linha('C.C. Reconheceu',caso.ccAck?`SIM — ${ts(caso.ccAckTime)}`:'NÃO');
+      linha('Protocolo Encerrado',caso.ccFinalizado?`SIM — ${ts(caso.ccFinalizadoTime)}`:'NÃO');
+
+      const total = doc.internal.getNumberOfPages();
+      for(let i=1;i<=total;i++){
+        doc.setPage(i);
+        doc.setDrawColor(...CINZA); doc.line(10,285,200,285);
+        doc.setFontSize(8); doc.setTextColor(...CINZA);
+        doc.text('PTM Centro Cirúrgico — HRVJ/ISGH — Emitido automaticamente',10,290);
+        doc.text(`Página ${i} de ${total}`,200,290,{align:'right'});
+      }
+      doc.save(`PTM-CC-${caso.id}-${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.pdf`);
+    }
+
     // ===== SISTEMA DE LOGIN =====
     const SENHA_SISTEMA = 'HRVJ2026';
     const CHAVE_SESSAO = 'ptm_autenticado';
@@ -1042,6 +1276,42 @@
     // ===== INIT =====
     verificarSessao();
   </script>
+
+  <!-- ===== MODAL CHAT C.C. ===== -->
+  <div id="modalChatCC" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9000;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#1a1a24;border-radius:16px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;border:1px solid #2a2a3a;">
+      <div style="padding:16px 20px;border-bottom:1px solid #2a2a3a;display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="margin:0;font-size:15px;color:#fff;">💬 Chat — Centro Cirúrgico</h3>
+        <button onclick="fecharChatCC()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;">✕</button>
+      </div>
+      <div id="listaChatCC" style="overflow-y:auto;padding:16px;flex:1;max-height:240px;"></div>
+      <div style="padding:12px 16px;border-top:1px solid #2a2a3a;">
+        <p style="color:#8888a0;font-size:11px;margin-bottom:8px;font-weight:bold;">MENSAGENS RÁPIDAS DO C.C.:</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+          <button onclick="enviarMensagemCC('✅ C.C. ciente — sala sendo preparada')" style="background:#12121a;border:1px solid #2a2a3a;color:#fff;padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">✅ Sala sendo preparada</button>
+          <button onclick="enviarMensagemCC('👨‍⚕️ Equipe completa na sala — pronta para receber')" style="background:#12121a;border:1px solid #2a2a3a;color:#fff;padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">👨‍⚕️ Equipe pronta</button>
+          <button onclick="enviarMensagemCC('⏳ Aguardando chegada do paciente')" style="background:#12121a;border:1px solid #2a2a3a;color:#fff;padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">⏳ Aguardando paciente</button>
+          <button onclick="enviarMensagemCC('🏁 Paciente recebido na mesa cirúrgica')" style="background:#12121a;border:1px solid #2a2a3a;color:#fff;padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">🏁 Paciente recebido</button>
+          <button onclick="enviarMensagemCC('🔴 URGENTE: precisamos de mais suporte')" style="background:#12121a;border:1px solid #ff2d55;color:#ff2d55;padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:bold;">🔴 URGENTE</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input id="chatInputCC" type="text" placeholder="Mensagem do C.C...." style="flex:1;padding:10px;border-radius:8px;border:1px solid #2a2a3a;background:#12121a;color:#fff;font-size:13px;" onkeydown="if(event.key==='Enter') enviarMensagemCustomCC()">
+          <button onclick="enviarMensagemCustomCC()" style="padding:10px 16px;background:#30d158;color:#fff;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">ENVIAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL HISTÓRICO C.C. ===== -->
+  <div id="modalHistoricoCC" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9000;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#1a1a24;border-radius:16px;width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;border:1px solid #2a2a3a;">
+      <div style="padding:16px 20px;border-bottom:1px solid #2a2a3a;display:flex;justify-content:space-between;align-items:center;">
+        <h3 id="tituloHistoricoCC" style="margin:0;font-size:15px;color:#fff;">📋 Histórico C.C.</h3>
+        <button onclick="fecharHistoricoCC()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;">✕</button>
+      </div>
+      <div id="listaHistoricoCC" style="overflow-y:auto;padding:16px;flex:1;color:#fff;"></div>
+    </div>
+  </div>
 
 </body>
 </html>
