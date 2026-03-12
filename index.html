@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
+  <title>PTM Sala Vermelha - HRVJ</title>
+  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>PTM Sala Vermelha - HRVJ</title>
@@ -2142,6 +2143,8 @@
         };
         
         await enviarParaPlanilha(casoCompleto);
+        // Após o enviarParaPlanilha(dadosCompletos):
+        gerarRelatorioPDF(dadosCompletos);
         
         currentPatient = null;
         showPanel('empty');
@@ -2150,6 +2153,7 @@
         console.error('Erro ao finalizar:', error);
         alert('Erro ao finalizar. Tente novamente.');
       }
+
     }
 
     // ===== GOOGLE SHEETS WEBHOOK =====
@@ -2591,7 +2595,162 @@
       showPanel('empty');
       escutarCasos();
     }
+// ===== RELATÓRIO PDF =====
+function gerarRelatorioPDF(dados) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
 
+  const VERMELHO = [180, 0, 0];
+  const PRETO = [30, 30, 30];
+  const CINZA = [100, 100, 100];
+  const CINZA_CLARO = [240, 240, 240];
+
+  let y = 15; // cursor vertical
+
+  // ── CABEÇALHO ──
+  doc.setFillColor(...VERMELHO);
+  doc.rect(0, 0, 210, 28, 'F');
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('PROTOCOLO DE TRANSFUSÃO MACIÇA', 105, 11, { align: 'center' });
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Hospital Regional Vale do Jaguaribe — HRVJ / ISGH', 105, 18, { align: 'center' });
+  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 105, 24, { align: 'center' });
+
+  y = 36;
+
+  // ── HELPER: seção ──
+  function secao(titulo) {
+    doc.setFillColor(...CINZA_CLARO);
+    doc.rect(10, y, 190, 7, 'F');
+    doc.setTextColor(...VERMELHO);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(titulo, 13, y + 5);
+    y += 10;
+  }
+
+  // ── HELPER: linha ──
+  function linha(label, valor, destaque = false) {
+    if (y > 270) { doc.addPage(); y = 15; }
+    doc.setTextColor(...CINZA);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(label + ':', 13, y);
+    doc.setTextColor(...PRETO);
+    doc.setFont('helvetica', destaque ? 'bold' : 'normal');
+    doc.text(String(valor || '—'), 65, y);
+    y += 6;
+  }
+
+  // ── HELPER: formatar timestamp ──
+  function ts(campo) {
+    if (!campo) return '—';
+    try {
+      const d = campo.toDate ? campo.toDate() : new Date(campo);
+      return d.toLocaleTimeString('pt-BR');
+    } catch { return '—'; }
+  }
+
+  // ── 1. IDENTIFICAÇÃO ──
+  secao('1. IDENTIFICAÇÃO DO CASO');
+  linha('ID do Caso', dados.id, true);
+  linha('Identificação', dados.ident);
+  linha('Sexo', dados.sexo);
+  linha('Faixa Etária', dados.faixaEtaria);
+  linha('Raça/Cor', dados.raca);
+  linha('Idade', dados.idade ? dados.idade + ' anos' : '—');
+  linha('Abertura do Caso', ts(dados.createdAt));
+  y += 2;
+
+  // ── 2. CRITÉRIOS PTM ──
+  secao('2. CRITÉRIOS PTM');
+  const criterios = dados.criterios || [];
+  const outros = dados.criteriosOutros || [];
+  const todosCriterios = [...criterios, ...outros];
+  if (todosCriterios.length === 0) {
+    linha('Critérios', 'Nenhum registrado');
+  } else {
+    todosCriterios.forEach((c, i) => linha(`Critério ${i + 1}`, c));
+  }
+  y += 2;
+
+  // ── 3. ESPECIALISTAS ──
+  secao('3. ESPECIALISTAS');
+  linha('Especialidades Acionadas', (dados.especialidades || []).join(', ') || '—');
+  linha('Acionamento NAC', ts(dados.nacTime));
+  linha('Acionamento Esp.', ts(dados.espTime));
+  linha('Especialista Chegou', dados.espChegou ? 'SIM — ' + ts(dados.espChegouTime) : 'NÃO');
+  linha('NAC Confirmou Ciência', dados.nacAck ? 'SIM — ' + ts(dados.nacAckTime) : 'NÃO');
+  linha('NAC Fez Ligação', dados.nacLigou ? 'SIM — ' + ts(dados.nacLigouTime) : 'NÃO');
+  y += 2;
+
+  // ── 4. HEMODERIVADOS ──
+  secao('4. HEMODERIVADOS');
+  linha('Decisão', dados.onda === 'SIM' ? 'ONDA VERMELHA (Transporte)' : 'HEMOTRANSFUSÃO LOCAL', true);
+  linha('Hemácias (CH)', dados.hemoderivadosDetalhado?.hemacias ?? '—');
+  linha('Plasma (PFC)', dados.hemoderivadosDetalhado?.plasma ?? '—');
+  linha('Plaquetas', dados.hemoderivadosDetalhado?.plaquetas ?? '—');
+  linha('Crioprecipitado', dados.hemoderivadosDetalhado?.crioprecipitado ?? '—');
+  linha('Extras', dados.hemoderivadosExtras || '—');
+  linha('Lab Solicitado', ts(dados.horaLabSolicitado));
+  linha('Início Transfusão', ts(dados.horaInicioTransfusao));
+  linha('Tempo Hemotransfusão', dados.tempoHemotransfusao || '—');
+  y += 2;
+
+  // ── 5. LINHA DO TEMPO ──
+  secao('5. LINHA DO TEMPO');
+  const eventos = [
+    { label: 'Caso Aberto', time: dados.createdAt },
+    { label: 'NAC Acionado', time: dados.nacTime },
+    { label: 'Especialistas Acionados', time: dados.espTime },
+    { label: 'Especialista Chegou', time: dados.espChegouTime },
+    { label: 'Decisão (Onda/Local)', time: dados.ondaTime },
+    { label: 'Maca Acionada', time: dados.transpAcionadoTime },
+    { label: 'Maca Chegou na Sala', time: dados.transpChegouTime },
+    { label: 'Paciente Saiu da Sala', time: dados.transpSaidaSalaTime },
+    { label: 'Lab Solicitado', time: dados.horaLabSolicitado },
+    { label: 'Início Transfusão', time: dados.horaInicioTransfusao },
+    { label: 'CC Confirmou Recebimento', time: dados.ccAckTime },
+    { label: 'Caso Finalizado', time: dados.finalizadoAt },
+  ].filter(e => e.time);
+
+  if (eventos.length === 0) {
+    linha('Eventos', 'Nenhum registrado');
+  } else {
+    eventos.forEach(e => linha(e.label, ts(e.time)));
+  }
+  y += 2;
+
+  // ── 6. AUDITORIA ──
+  secao('6. DADOS DE AUDITORIA');
+  linha('Prontuário', dados.prontuario);
+  linha('Nome do Paciente', dados.nome);
+  linha('Data de Nascimento', dados.dataNasc);
+  linha('Médico Responsável', dados.medico);
+  linha('Desfecho', dados.desfecho, true);
+  y += 2;
+
+  // ── RODAPÉ ──
+  const totalPaginas = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPaginas; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(...CINZA);
+    doc.line(10, 285, 200, 285);
+    doc.setFontSize(8);
+    doc.setTextColor(...CINZA);
+    doc.text('PTM Sala Vermelha — HRVJ/ISGH — Documento gerado automaticamente', 10, 290);
+    doc.text(`Página ${i} de ${totalPaginas}`, 200, 290, { align: 'right' });
+  }
+
+  // ── SALVAR ──
+  const nomeArquivo = `PTM-${dados.id || 'CASO'}-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
+  doc.save(nomeArquivo);
+}
     // ===== INIT =====
     console.log('🔧 Executando INIT...');
     // Verificar sessão ao carregar
