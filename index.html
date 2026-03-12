@@ -1481,15 +1481,13 @@
           </div>
           
           <div id="btnAreaSalvar" style="display: none;">
-            <button class="action-btn warning" onclick="salvarDadosAuditoria()">
-              💾 SALVAR DADOS - AGUARDAR C.C.
-            </button>
+            <!-- Para Onda Vermelha: a Sala Vermelha finaliza depois que o CC confirmar chegada -->
+            <div id="areaOndaVermelha">
+              <!-- JS vai renderizar o botão correto dependendo se CC confirmou ou não -->
+            </div>
             <button onclick="if(currentPatient){ gerarRelatorioPDF({...currentPatient}); }" style="width:100%;margin-top:10px;padding:14px;background:rgba(191,90,242,0.12);border:1px solid #bf5af2;border-radius:12px;color:#bf5af2;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">
               📄 IMPRIMIR PDF (relatório atual)
             </button>
-            <p style="text-align: center; margin-top: 15px; color: var(--accent-orange); font-size: 13px;">
-              ⚠️ Onda Vermelha ativa: o protocolo será encerrado pelo Centro Cirúrgico
-            </p>
           </div>
         </div>
 
@@ -1576,9 +1574,14 @@
           if (currentPatient) {
             const updated = patients.find(p => p.id === currentPatient.id);
             if (updated) {
+              const ccConfirmouAntes = currentPatient.ccRecebeuPaciente;
               currentPatient = updated; // Atualiza com dados mais recentes
               // Se chat aberto, re-renderizar automaticamente
               if (chatAberto) renderizarMensagensChat();
+              // Se CC acabou de confirmar chegada, atualizar botão Onda Vermelha em tempo real
+              if (!ccConfirmouAntes && updated.ccRecebeuPaciente) {
+                if (typeof atualizarBotaoOndaVermelha === 'function') atualizarBotaoOndaVermelha();
+              }
             } else {
               // Paciente foi finalizado
               currentPatient = null;
@@ -1634,10 +1637,33 @@
         if (currentPatient.onda === 'SIM') {
           document.getElementById('btnAreaFinalizar').style.display = 'none';
           document.getElementById('btnAreaSalvar').style.display = 'block';
+          atualizarBotaoOndaVermelha();
         } else {
           document.getElementById('btnAreaFinalizar').style.display = 'block';
           document.getElementById('btnAreaSalvar').style.display = 'none';
         }
+      }
+    }
+
+    function atualizarBotaoOndaVermelha() {
+      const area = document.getElementById('areaOndaVermelha');
+      if (!area || !currentPatient) return;
+      const ccConfirmou = currentPatient.ccRecebeuPaciente;
+      if (ccConfirmou) {
+        const horaCC = (() => { try { const d = currentPatient.ccRecebeuTime?.toDate ? currentPatient.ccRecebeuTime.toDate() : new Date(currentPatient.ccRecebeuTime); return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); } catch(e){ return ''; }})();
+        area.innerHTML = `
+          <div style="background:rgba(48,209,88,0.1);border:1px solid #30d158;border-radius:10px;padding:10px 14px;margin-bottom:10px;text-align:center;font-size:12px;color:#30d158;font-weight:700;">
+            ✅ C.C. confirmou recebimento às ${horaCC}
+          </div>
+          <button class="action-btn success" onclick="finalizarProtocolo()">
+            🏁 FINALIZAR PROTOCOLO
+          </button>`;
+      } else {
+        area.innerHTML = `
+          <div style="background:rgba(255,149,0,0.1);border:1px solid #ff9500;border-radius:10px;padding:12px 14px;text-align:center;">
+            <div style="font-size:13px;font-weight:700;color:#ff9500;margin-bottom:4px;">⏳ Aguardando C.C. confirmar chegada</div>
+            <div style="font-size:11px;color:var(--text-secondary);">Quando o paciente chegar ao C.C., eles confirmarão o recebimento e o botão de finalizar será liberado aqui.</div>
+          </div>`;
       }
     }
 
@@ -2274,8 +2300,13 @@
         return;
       }
 
-      // ===== NOTA: Para Onda Vermelha, a Sala Vermelha usa "Salvar Dados" e o C.C. finaliza =====
-      // Para outros desfechos, a Sala Vermelha finaliza diretamente
+      // ===== BLOQUEIO ONDA VERMELHA: CC deve confirmar chegada antes de finalizar =====
+      if (currentPatient && currentPatient.onda === 'SIM') {
+        if (!currentPatient.ccRecebeuPaciente) {
+          alert('⚠️ AGUARDANDO CONFIRMAÇÃO DO C.C.\n\nO Centro Cirúrgico ainda não confirmou o recebimento do paciente.\n\nAssim que o paciente chegar ao C.C., eles clicarão em "PACIENTE CHEGOU NO C.C." — então você poderá finalizar.');
+          return;
+        }
+      }
 
       try {
         // Buscar dados COMPLETOS do Firebase antes de finalizar
@@ -2551,6 +2582,7 @@
       if (p.onda === 'SIM') {
         document.getElementById('btnAreaFinalizar').style.display = 'none';
         document.getElementById('btnAreaSalvar').style.display = 'block';
+        if (typeof atualizarBotaoOndaVermelha === 'function') atualizarBotaoOndaVermelha();
       } else {
         document.getElementById('btnAreaFinalizar').style.display = 'block';
         document.getElementById('btnAreaSalvar').style.display = 'none';
