@@ -553,34 +553,38 @@
     /* ===== AUDIO INDICATOR ===== */
     .audio-indicator {
       position: fixed;
-      bottom: 30px;
-      right: 30px;
+      bottom: 90px;
+      right: 22px;
       background: var(--bg-card);
       border: 2px solid var(--border);
-      padding: 15px 20px;
-      border-radius: 16px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: center;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.3s;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      z-index: 8000;
     }
 
     .audio-indicator:hover {
       border-color: var(--accent-teal);
+      transform: scale(1.08);
     }
 
     .audio-indicator.active {
       border-color: var(--accent-green);
+      box-shadow: 0 0 18px rgba(48,209,88,0.4);
     }
 
     .audio-indicator .icon {
-      font-size: 24px;
+      font-size: 22px;
     }
 
     .audio-indicator .text {
-      font-size: 12px;
-      font-weight: 700;
+      display: none;
     }
 
     /* ===== RESPONSIVE ===== */
@@ -795,8 +799,10 @@
       if (!audioAtivo) {
         initAudio();
         audioAtivo = true;
-        document.getElementById('audioIndicator').classList.add('active');
-        document.getElementById('audioIndicator').innerHTML = '<div class="icon">🔊</div><div class="text">ÁUDIO LIGADO</div>';
+        const ind = document.getElementById('audioIndicator');
+        ind.classList.add('active');
+        ind.innerHTML = '<div class="icon">🔊</div>';
+        ind.title = 'Áudio ativado';
       }
     }
     
