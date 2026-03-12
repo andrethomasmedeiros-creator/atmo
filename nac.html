@@ -1319,14 +1319,7 @@ ${ondaStatus}
       <div style="padding:12px 16px;border-top:1px solid var(--border);">
         <p style="color:var(--text-secondary);font-size:11px;margin-bottom:8px;font-weight:bold;">MENSAGENS RÁPIDAS DO NAC:</p>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
-          <button onclick="enviarMensagemNac('✅ NAC ciente — providências tomadas')" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">✅ NAC ciente</button>
-          <button onclick="enviarMensagemNac('📞 Especialista contatado — a caminho')" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">📞 Esp. contatado</button>
-          <button onclick="enviarMensagemNac('🏥 C.C. preparado para receber')" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">🏥 C.C. pronto</button>
-          <button onclick="enviarMensagemNac('🩸 Hemocentro acionado — bolsas a caminho')" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">🩸 Hemocentro acionado</button>
-          <button onclick="enviarMensagemNac('⏳ Aguardando confirmação do hemocentro')" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">⏳ Aguardando hemocentro</button>
-          <button onclick="enviarMensagemNac('🛗 Maca/elevador acionado')" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;">🛗 Maca acionada</button>
-        </div>
-        <div style="display:flex;gap:8px;">
+            <div style="display:flex;gap:8px;">
           <input id="chatInputNac" type="text" placeholder="Mensagem do NAC..." style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-primary);font-size:13px;" onkeydown="if(event.key==='Enter') enviarMensagemCustomNac()">
           <button onclick="enviarMensagemCustomNac()" style="padding:10px 16px;background:var(--accent-orange);color:#fff;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">ENVIAR</button>
         </div>
