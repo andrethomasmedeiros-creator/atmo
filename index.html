@@ -1502,6 +1502,7 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="runtime-config.js"></script>
   <script src="firebase-config.js"></script>
 
   <script>
@@ -2373,8 +2374,9 @@
     }
 
     // ===== GOOGLE SHEETS WEBHOOK =====
-    const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz-qUUhqPiWu6-peOOaiHy1D0UVFXKusxvImf4IfysiouJ97jbHTY3a6IKSmvurOwY/exec';
-    const SHEETS_CHAVE_SECRETA = 'HRVJ-PTM-2026-SEGURO';
+    const runtimeConfig = window.PTM_RUNTIME_CONFIG || {};
+    const SHEETS_WEBHOOK_URL = runtimeConfig.SHEETS_WEBHOOK_URL || '';
+    const SHEETS_CHAVE_SECRETA = runtimeConfig.SHEETS_CHAVE_SECRETA || '';
     
     function formatarDataHora(timestamp) {
       if (!timestamp) return '';
@@ -2455,6 +2457,11 @@
           document.body.appendChild(iframe);
         }
         
+        if (!SHEETS_WEBHOOK_URL || !SHEETS_CHAVE_SECRETA) {
+          console.warn('Webhook do Google Sheets não configurado. Defina PTM_RUNTIME_CONFIG.');
+          return;
+        }
+
         // Usar form para enviar dados (contorna CORS)
         const form = document.createElement('form');
         form.method = 'POST';
@@ -2782,13 +2789,19 @@
     }
 
     // ===== SISTEMA DE LOGIN =====
-    const SENHA_SISTEMA = 'HRVJ2026';
-    const CHAVE_SESSAO = 'ptm_autenticado_sala';
+    const SENHA_SISTEMA = runtimeConfig.SENHA_SALA || '';
+    const CHAVE_SESSAO = runtimeConfig.CHAVE_SESSAO_SALA || 'ptm_autenticado_sala';
     
     function verificarLogin() {
       const senhaDigitada = document.getElementById('loginSenha').value;
       const errorEl = document.getElementById('loginError');
       
+      if (!SENHA_SISTEMA) {
+        errorEl.textContent = '⚠️ Sistema não configurado';
+        errorEl.style.display = 'block';
+        return;
+      }
+
       if (senhaDigitada === SENHA_SISTEMA) {
         const expiracao = Date.now() + (24 * 60 * 60 * 1000);
         localStorage.setItem(CHAVE_SESSAO, expiracao.toString());

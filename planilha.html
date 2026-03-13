@@ -112,14 +112,22 @@
     </div>
   </div>
 
+  <script src="runtime-config.js"></script>
   <script>
-    const SENHA_PLANILHA = 'HRVJPTM';
-    const URL_PLANILHA = 'https://docs.google.com/spreadsheets/d/1xyFv21zCrT6U7LWYNjlkBvAcqDRGco4P8Zyv-hv7aUA/';
+    const runtimeConfig = window.PTM_RUNTIME_CONFIG || {};
+    const SENHA_PLANILHA = runtimeConfig.SENHA_PLANILHA || '';
+    const URL_PLANILHA = runtimeConfig.URL_PLANILHA || 'https://docs.google.com/spreadsheets/d/1xyFv21zCrT6U7LWYNjlkBvAcqDRGco4P8Zyv-hv7aUA/';
     
     function verificarSenha() {
       const senhaDigitada = document.getElementById('senha').value;
       const erro = document.getElementById('erro');
       
+      if (!SENHA_PLANILHA) {
+        erro.textContent = '⚠️ Planilha não configurada';
+        erro.style.display = 'block';
+        return;
+      }
+
       if (senhaDigitada === SENHA_PLANILHA) {
         // Redirecionar para a planilha
         window.location.href = URL_PLANILHA;
