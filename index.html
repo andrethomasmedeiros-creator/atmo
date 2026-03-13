@@ -1798,8 +1798,42 @@
       } catch (e) { console.log('Audio não suportado'); }
     }
 
+
+    function limparCacheUltimoCasoFinalizado() {
+      window.ultimoCasoFinalizado = null;
+      const btnPDF = document.getElementById('btnImprimirPDFFinal');
+      if (btnPDF) btnPDF.style.display = 'none';
+
+      const btnFlutuante = document.getElementById('btnImprimirPDFFlutuante');
+      if (btnFlutuante) btnFlutuante.style.display = 'none';
+    }
+
+    function mostrarBotaoPDFFinalizacao(caso) {
+      window.ultimoCasoFinalizado = caso;
+
+      const btnPDF = document.getElementById('btnImprimirPDFFinal');
+      if (btnPDF) {
+        btnPDF.style.display = 'flex';
+        btnPDF.onclick = () => gerarRelatorioPDF(window.ultimoCasoFinalizado);
+      }
+
+      let btnFlutuante = document.getElementById('btnImprimirPDFFlutuante');
+      if (!btnFlutuante) {
+        btnFlutuante = document.createElement('button');
+        btnFlutuante.id = 'btnImprimirPDFFlutuante';
+        btnFlutuante.textContent = '📄 GERAR RELATÓRIO PDF';
+        btnFlutuante.style.cssText = 'position:fixed;right:20px;bottom:20px;z-index:9999;padding:12px 16px;background:#bf5af2;border:1px solid #d6a6ff;border-radius:10px;color:#fff;font-weight:700;cursor:pointer;box-shadow:0 10px 30px rgba(191,90,242,0.35);';
+        document.body.appendChild(btnFlutuante);
+      }
+
+      btnFlutuante.style.display = 'block';
+      btnFlutuante.onclick = () => gerarRelatorioPDF(window.ultimoCasoFinalizado);
+    }
+
     // ===== NOVO PACIENTE =====
     function novoPaciente() {
+      limparCacheUltimoCasoFinalizado();
+
       // Apenas limpar o paciente atual da seleção, mas manter a lista
       currentPatient = null;
       
@@ -1807,6 +1841,16 @@
       document.getElementById('inpIdent').value = '';
       document.getElementById('inpSexo').value = '';
       document.getElementById('inpIdade').value = '';
+      document.getElementById('inpProntuario').value = '';
+      document.getElementById('inpNome').value = '';
+      document.getElementById('inpNasc').value = '';
+      document.getElementById('inpMedico').value = '';
+      document.getElementById('inpDesfecho').value = '';
+      ['qtdHemaciasExtra','qtdPlasmaExtra','qtdPlaquetasExtra','qtdCrioExtra'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = 0;
+      });
+      verificarDesfechoPTM();
       
       // Limpar seleções de critérios e especialistas
       document.querySelectorAll('.criteria-item.selected').forEach(el => el.classList.remove('selected'));
@@ -1875,6 +1919,7 @@
         await casosRef.doc(id).set(novoCaso);
         console.log('✅ Paciente criado:', id);
         currentPatient = novoCaso;
+        limparCacheUltimoCasoFinalizado();
         // O listener do Firebase vai atualizar a sidebar automaticamente
         showPanel('2');
       } catch (error) {
@@ -2352,18 +2397,9 @@
         
         await enviarParaPlanilha(casoCompleto);
         
-        // Guardar último caso finalizado para botão de PDF
-        window.ultimoCasoFinalizado = casoCompleto;
-        
         currentPatient = null;
         showPanel('empty');
-        
-        // Mostrar botão de imprimir PDF no empty state
-        const btnPDF = document.getElementById('btnImprimirPDFFinal');
-        if (btnPDF) {
-          btnPDF.style.display = 'flex';
-          btnPDF.onclick = () => gerarRelatorioPDF(window.ultimoCasoFinalizado);
-        }
+        mostrarBotaoPDFFinalizacao(casoCompleto);
         
         alert('✅ Protocolo finalizado com sucesso!\n\nDados salvos na planilha.\n\nClique em "Imprimir PDF" para baixar o relatório.');
       } catch (error) {
@@ -2375,8 +2411,8 @@
 
     // ===== GOOGLE SHEETS WEBHOOK =====
     const runtimeConfig = window.PTM_RUNTIME_CONFIG || {};
-    const SHEETS_WEBHOOK_URL = runtimeConfig.SHEETS_WEBHOOK_URL || '';
-    const SHEETS_CHAVE_SECRETA = runtimeConfig.SHEETS_CHAVE_SECRETA || '';
+    const SHEETS_WEBHOOK_URL = runtimeConfig.SHEETS_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbz-qUUhqPiWu6-peOOaiHy1D0UVFXKusxvImf4IfysiouJ97jbHTY3a6IKSmvurOwY/exec';
+    const SHEETS_CHAVE_SECRETA = runtimeConfig.SHEETS_CHAVE_SECRETA || 'HRVJ-PTM-2026-SEGURO';
     
     function formatarDataHora(timestamp) {
       if (!timestamp) return '';
@@ -2424,7 +2460,7 @@
           medicoPtm: caso.medico || '',
           cirurgiaoOnda: '',
           horaNacCiente: formatarDataHora(caso.nacAckTime),
-          horaNacLigouEsp: formatarDataHora(caso.nacLigouTime),
+          horaNacLigouEsp: formatarDataHora(caso.nacAcionouEspTime || caso.nacLigouTime),
           especialidadesAcionadas: (caso.especialidades || []).join(', '),
           identificacao: caso.ident || '',
           sexo: caso.sexo || '',
@@ -2457,11 +2493,6 @@
           document.body.appendChild(iframe);
         }
         
-        if (!SHEETS_WEBHOOK_URL || !SHEETS_CHAVE_SECRETA) {
-          console.warn('Webhook do Google Sheets não configurado. Defina PTM_RUNTIME_CONFIG.');
-          return;
-        }
-
         // Usar form para enviar dados (contorna CORS)
         const form = document.createElement('form');
         form.method = 'POST';
@@ -2539,6 +2570,7 @@
     }
 
     function selectPatient(id) {
+      limparCacheUltimoCasoFinalizado();
       currentPatient = patients.find(p => p.id === id);
       renderPatients();
       
@@ -2789,19 +2821,13 @@
     }
 
     // ===== SISTEMA DE LOGIN =====
-    const SENHA_SISTEMA = runtimeConfig.SENHA_SALA || '';
+    const SENHA_SISTEMA = runtimeConfig.SENHA_SALA || 'HRVJ2026';
     const CHAVE_SESSAO = runtimeConfig.CHAVE_SESSAO_SALA || 'ptm_autenticado_sala';
     
     function verificarLogin() {
       const senhaDigitada = document.getElementById('loginSenha').value;
       const errorEl = document.getElementById('loginError');
       
-      if (!SENHA_SISTEMA) {
-        errorEl.textContent = '⚠️ Sistema não configurado';
-        errorEl.style.display = 'block';
-        return;
-      }
-
       if (senhaDigitada === SENHA_SISTEMA) {
         const expiracao = Date.now() + (24 * 60 * 60 * 1000);
         localStorage.setItem(CHAVE_SESSAO, expiracao.toString());
