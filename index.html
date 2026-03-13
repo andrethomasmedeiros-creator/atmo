@@ -1841,6 +1841,10 @@
       document.getElementById('inpIdent').value = '';
       document.getElementById('inpSexo').value = '';
       document.getElementById('inpIdade').value = '';
+      const faixaEl = document.getElementById('inpFaixaEtaria');
+      if (faixaEl) faixaEl.value = '';
+      const racaEl = document.getElementById('inpRaca');
+      if (racaEl) racaEl.value = '';
       document.getElementById('inpProntuario').value = '';
       document.getElementById('inpNome').value = '';
       document.getElementById('inpNasc').value = '';
@@ -2621,6 +2625,14 @@
       });
       
       // Restaurar dados de auditoria se existirem
+      // Restaurar dados de identificação
+      document.getElementById('inpIdent').value = p.ident || '';
+      document.getElementById('inpSexo').value = p.sexo || '';
+      document.getElementById('inpFaixaEtaria').value = p.faixaEtaria || '';
+      document.getElementById('inpRaca').value = p.raca || '';
+      document.getElementById('inpIdade').value = p.idade || '';
+
+      // Restaurar dados de auditoria
       document.getElementById('inpProntuario').value = p.prontuario || '';
       document.getElementById('inpNome').value = p.nome || '';
       document.getElementById('inpNasc').value = p.dataNasc || '';
