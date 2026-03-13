@@ -1034,8 +1034,8 @@
 
       // Apenas limpar o paciente atual da seleção, mas manter a lista
       currentPatient = null;
-      
-      // Limpar campos do formulário
+
+      // Limpar campos do formulário (Painel 1)
       document.getElementById('inpIdent').value = '';
       document.getElementById('inpSexo').value = '';
       document.getElementById('inpIdade').value = '';
@@ -1043,6 +1043,8 @@
       if (faixaEl) faixaEl.value = '';
       const racaEl = document.getElementById('inpRaca');
       if (racaEl) racaEl.value = '';
+
+      // Limpar campos do Painel 6 (auditoria) — evita cache do paciente anterior
       document.getElementById('inpProntuario').value = '';
       document.getElementById('inpNome').value = '';
       document.getElementById('inpNasc').value = '';
@@ -1053,12 +1055,29 @@
         if (el) el.value = 0;
       });
       verificarDesfechoPTM();
-      
+      const areaContinuar = document.getElementById('areaContinuarPTM');
+      if (areaContinuar) areaContinuar.style.display = 'none';
+
+      // Restaurar botões do Painel 6 ao estado padrão
+      const btnAreaFinalizar = document.getElementById('btnAreaFinalizar');
+      const btnAreaSalvar = document.getElementById('btnAreaSalvar');
+      if (btnAreaFinalizar) btnAreaFinalizar.style.display = 'block';
+      if (btnAreaSalvar) btnAreaSalvar.style.display = 'none';
+
+      // Esconder botão PDF pós-finalização
+      const btnPDF = document.getElementById('btnImprimirPDFFinal');
+      if (btnPDF) btnPDF.style.display = 'none';
+
+
       // Limpar seleções de critérios e especialistas
       document.querySelectorAll('.criteria-item.selected').forEach(el => el.classList.remove('selected'));
       document.querySelectorAll('.esp-item.selected').forEach(el => el.classList.remove('selected'));
       updateCriteriaCounter();
-      
+
+      // Resetar botão especialista
+      const btnEsp = document.getElementById('btnEspChegou');
+      if (btnEsp) { btnEsp.textContent = '👨‍⚕️ ESPECIALISTA CHEGOU NA SALA'; btnEsp.disabled = false; }
+
       // Resetar etapas do painel 5b
       const etapa1 = document.getElementById('etapa5b-1');
       const etapa2 = document.getElementById('etapa5b-2');
@@ -1066,7 +1085,7 @@
       if (etapa1) etapa1.style.display = 'block';
       if (etapa2) etapa2.style.display = 'none';
       if (etapa3) etapa3.style.display = 'none';
-      
+
       // Resetar checkboxes de hemoderivados
       ['chkHemacias', 'chkPlasma', 'chkPlaquetas', 'chkCrio'].forEach(id => {
         const el = document.getElementById(id);
@@ -1076,10 +1095,10 @@
         const el = document.getElementById(id);
         if (el) { el.value = ''; el.disabled = true; }
       });
-      
+
       // Atualizar a sidebar para remover destaque do paciente anterior
       renderPatients();
-      
+
       // Mostrar painel de identificação
       showPanel('1');
     }
@@ -1612,13 +1631,16 @@
         };
 
         await casosRef.doc(patientId).update(dadosFinais);
+        // Após este await, currentPatient pode ser null (onSnapshot dispara ao mudar status)
+        // Por isso usamos patientId e casoCompleto já capturados acima
 
         await enviarParaPlanilha(casoCompleto);
 
         currentPatient = null;
         showPanel('empty');
         mostrarBotaoPDFFinalizacao(casoCompleto);
-        
+
+
         mostrarToast('✅ Protocolo finalizado com sucesso!\n\nDados salvos na planilha.\n\nClique em "Imprimir PDF" para baixar o relatório.', 'success');
       } catch (error) {
         console.error('Erro ao finalizar:', error);
