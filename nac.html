@@ -621,10 +621,12 @@
       <div class="login-error" id="loginError">❌ Senha incorreta</div>
     </div>
   </div>
+  <script src="runtime-config.js"></script>
   <script>
     // Login inline para evitar erro de função não definida
-    const SENHA_SISTEMA = 'HRVJ2026';
-    const CHAVE_SESSAO = 'ptm_autenticado_nac';
+    const runtimeConfig = window.PTM_RUNTIME_CONFIG || {};
+    const SENHA_SISTEMA = runtimeConfig.SENHA_NAC || 'HRVJ2026';
+    const CHAVE_SESSAO = runtimeConfig.CHAVE_SESSAO_NAC || 'ptm_autenticado_nac';
     
     function verificarLogin() {
       const senhaDigitada = document.getElementById('loginSenha').value;

@@ -72,6 +72,13 @@ const firebaseConfig = {
 
 ---
 
+
+### Configuração de credenciais de runtime
+
+1. Copie `runtime-config.example.js` para `runtime-config.js`
+2. Preencha as senhas e credenciais locais (webhook/chave)
+3. **Não comite** `runtime-config.js` (arquivo já ignorado no git)
+
 ## 5️⃣ Testar Localmente
 
 ### Opção A: Abrir direto no navegador

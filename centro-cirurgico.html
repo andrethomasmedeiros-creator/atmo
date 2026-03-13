@@ -670,6 +670,7 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="runtime-config.js"></script>
   <script src="firebase-config.js"></script>
 
   <script>
@@ -950,8 +951,9 @@
     }
 
     // ===== GOOGLE SHEETS WEBHOOK =====
-    const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz-qUUhqPiWu6-peOOaiHy1D0UVFXKusxvImf4IfysiouJ97jbHTY3a6IKSmvurOwY/exec';
-    const SHEETS_CHAVE_SECRETA = 'HRVJ-PTM-2026-SEGURO';
+    const runtimeConfig = window.PTM_RUNTIME_CONFIG || {};
+    const SHEETS_WEBHOOK_URL = runtimeConfig.SHEETS_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbz-qUUhqPiWu6-peOOaiHy1D0UVFXKusxvImf4IfysiouJ97jbHTY3a6IKSmvurOwY/exec';
+    const SHEETS_CHAVE_SECRETA = runtimeConfig.SHEETS_CHAVE_SECRETA || 'HRVJ-PTM-2026-SEGURO';
     
     function formatarDataHora(timestamp) {
       if (!timestamp) return '';
@@ -995,7 +997,7 @@
           medicoPtm: caso.medico || '',
           cirurgiaoOnda: '',
           horaNacCiente: formatarDataHora(caso.nacAckTime),
-          horaNacLigouEsp: formatarDataHora(caso.nacLigouTime),
+          horaNacLigouEsp: formatarDataHora(caso.nacAcionouEspTime || caso.nacLigouTime),
           especialidadesAcionadas: (caso.especialidades || []).join(', '),
           identificacao: caso.ident || '',
           sexo: caso.sexo || '',
@@ -1293,8 +1295,8 @@
     }
 
     // ===== SISTEMA DE LOGIN =====
-    const SENHA_SISTEMA = 'HRVJ2026';
-    const CHAVE_SESSAO = 'ptm_autenticado';
+    const SENHA_SISTEMA = runtimeConfig.SENHA_CC || 'HRVJ2026';
+    const CHAVE_SESSAO = runtimeConfig.CHAVE_SESSAO_CC || 'ptm_autenticado';
     
     function verificarLogin() {
       const senhaDigitada = document.getElementById('loginSenha').value;
