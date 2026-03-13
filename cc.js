@@ -12,29 +12,23 @@ let timers = {};
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Iniciar relógio
   atualizarRelogio();
   setInterval(atualizarRelogio, 1000);
-  
-  // Atualizar timers locais
   setInterval(atualizarTimersLocais, 1000);
-  
-  // Escutar mudanças no Firestore
+
   escutarCasosCC();
-  
-  // Alarme periódico
+  inicializarConectividade();
+
   setInterval(verificarAlarmes, 2000);
 });
 
-// Atualizar relógio
 function atualizarRelogio() {
-  const now = new Date();
   const el = document.getElementById('clock');
   if (el) {
-    el.textContent = now.toLocaleTimeString('pt-BR', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit' 
+    el.textContent = new Date().toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
     });
   }
 }
@@ -57,8 +51,6 @@ function toggleAudio() {
 
 function verificarAlarmes() {
   if (!audioAtivo) return;
-  
-  // Verificar se há casos de onda vermelha não reconhecidos
   const casoNaoReconhecido = casos.find(c => c.onda === 'SIM' && !c.ccAck);
   if (casoNaoReconhecido) {
     tocarAlarme('urgente');
@@ -71,8 +63,7 @@ function verificarAlarmes() {
 
 function escutarCasosCC() {
   if (unsubscribe) unsubscribe();
-  
-  // Escutar casos com Onda Vermelha ativada
+
   unsubscribe = casosRef
     .where('status', '==', 'ATIVO')
     .where('onda', '==', 'SIM')
@@ -86,6 +77,7 @@ function escutarCasosCC() {
       atualizarStatusBadge();
     }, (error) => {
       console.error('Erro ao escutar casos:', error);
+      mostrarToast('Erro de conexão com o banco de dados. Atualize a página.', 'error');
     });
 }
 
@@ -96,23 +88,22 @@ function escutarCasosCC() {
 function renderizarCards() {
   const container = document.getElementById('casesGrid');
   const emptyState = document.getElementById('emptyState');
-  
+
   if (!container || !emptyState) return;
-  
+
   if (casos.length === 0) {
     container.innerHTML = '';
     container.style.display = 'none';
     emptyState.style.display = 'flex';
     return;
   }
-  
+
   emptyState.style.display = 'none';
   container.style.display = 'grid';
-  
+
   container.innerHTML = casos.map(c => {
     const acknowledged = c.ccAck;
-    
-    // Timer
+
     let timerUI = '';
     let timerSub = '';
     if (acknowledged && c.ccAckTime) {
@@ -122,16 +113,16 @@ function renderizarCards() {
       timerUI = '--:--';
       timerSub = 'Aguardando reconhecimento';
     }
-    
+
     return `
       <div class="cc-card ${acknowledged ? 'acknowledged' : ''}" id="card-${c.id}">
-        
+
         <div class="onda-banner ${acknowledged ? 'acknowledged' : ''}">
           <h2>${acknowledged ? '✅ SALA EM PREPARO' : '🚨 ONDA VERMELHA - PREPARAR SALA 🚨'}</h2>
         </div>
-        
+
         <div class="card-body">
-          
+
           <div class="patient-header">
             <div class="patient-main">
               <div class="patient-avatar">${(c.ident || 'P')[0].toUpperCase()}</div>
@@ -142,13 +133,13 @@ function renderizarCards() {
             </div>
             <div class="patient-id">${c.id}</div>
           </div>
-          
+
           <div class="timer-section">
             <div class="timer-label">Tempo de Preparo da Sala</div>
             <div class="timer-value ${!acknowledged ? 'waiting' : ''}">${timerUI}</div>
             <div class="timer-sub">${timerSub}</div>
           </div>
-          
+
           <div class="info-row">
             <div class="info-card highlight">
               <div class="label">Especialidade</div>
@@ -163,14 +154,14 @@ function renderizarCards() {
               <div class="value">${c.transpEnd ? 'CHEGOU' : (c.transpTime ? 'EM ANDAMENTO' : 'AGUARDANDO')}</div>
             </div>
           </div>
-          
+
           ${c.cirurgiao ? `
             <div class="cirurgiao-box">
               <div class="label">Cirurgião Responsável</div>
               <div class="value">${c.cirurgiao}</div>
             </div>
           ` : ''}
-          
+
           <div class="action-buttons">
             ${!acknowledged ? `
               <button class="btn btn-reconhecer" onclick="reconhecerOnda('${c.id}', this)">
@@ -188,20 +179,19 @@ function renderizarCards() {
               </button>
             `}
           </div>
-          
+
         </div>
       </div>
     `;
   }).join('');
-  
-  // Atualizar timers imediatamente
+
   atualizarTimersLocais();
 }
 
 function atualizarStatusBadge() {
   const badge = document.getElementById('statusBadge');
   if (!badge) return;
-  
+
   if (casos.length === 0) {
     badge.textContent = 'AGUARDANDO';
     badge.classList.remove('alert');
@@ -226,8 +216,7 @@ function atualizarTimersLocais() {
   document.querySelectorAll('.live-timer').forEach(el => {
     const startMs = parseInt(el.getAttribute('data-start'));
     if (startMs) {
-      const diff = Math.floor((now - startMs) / 1000);
-      el.textContent = formatarTempoCurto(diff);
+      el.textContent = formatarTempoCurto(Math.floor((now - startMs) / 1000));
     }
   });
 }
@@ -237,52 +226,45 @@ function atualizarTimersLocais() {
 // ============================================
 
 async function reconhecerOnda(id, btn) {
-  if (btn) {
-    btn.textContent = '⏳...';
-    btn.disabled = true;
-  }
-  
+  setLoading(btn, true);
+
   try {
     await casosRef.doc(id).update({
       ccAck: true,
       ccAckTime: agora()
     });
+    registrarLog('CC_RECONHECEU_ONDA', id, {});
   } catch (error) {
     console.error('Erro ao reconhecer:', error);
-    if (btn) {
-      btn.textContent = '🔊 RECONHECER E PREPARAR SALA';
-      btn.disabled = false;
-    }
+    mostrarToast('Erro ao reconhecer Onda Vermelha. Tente novamente.', 'error');
+    setLoading(btn, false, '🔊 RECONHECER E PREPARAR SALA');
   }
 }
 
 async function encerrarProtocolo(id, btn) {
-  if (!confirm('Confirma que o paciente está na mesa cirúrgica?\n\nIsso encerrará o protocolo PTM.')) {
-    return;
-  }
-  
-  if (btn) {
-    btn.textContent = '⏳ ENCERRANDO...';
-    btn.disabled = true;
-  }
-  
-  try {
-    await casosRef.doc(id).update({
-      status: 'FINALIZADO',
-      ccFinalizado: true,
-      ccFinalizadoTime: agora(),
-      statusNac: 'ENCERRADO NO CENTRO CIRÚRGICO'
-    });
-    
-    alert('✅ Protocolo PTM encerrado com sucesso!\n\nTempo de preparo registrado.');
-  } catch (error) {
-    console.error('Erro ao encerrar:', error);
-    if (btn) {
-      btn.textContent = '🏁 PACIENTE NA MESA (ENCERRAR)';
-      btn.disabled = false;
+  mostrarConfirmacao(
+    'Encerrar Protocolo PTM?',
+    'Confirma que o paciente está na mesa cirúrgica? Esta ação encerrará o protocolo PTM.',
+    async () => {
+      setLoading(btn, true);
+
+      try {
+        await casosRef.doc(id).update({
+          status: 'FINALIZADO',
+          ccFinalizado: true,
+          ccFinalizadoTime: agora(),
+          statusNac: 'ENCERRADO NO CENTRO CIRÚRGICO'
+        });
+
+        registrarLog('CC_ENCERROU_PROTOCOLO', id, {});
+        mostrarToast('Protocolo PTM encerrado com sucesso! Tempo de preparo registrado.', 'success');
+      } catch (error) {
+        console.error('Erro ao encerrar:', error);
+        mostrarToast('Erro ao encerrar protocolo. Tente novamente.', 'error');
+        setLoading(btn, false, '🏁 PACIENTE NA MESA (ENCERRAR)');
+      }
     }
-    alert('Erro ao encerrar. Tente novamente.');
-  }
+  );
 }
 
 console.log('Centro Cirúrgico Dashboard carregado!');

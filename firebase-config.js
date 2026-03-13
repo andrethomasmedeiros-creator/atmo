@@ -14,26 +14,84 @@ const firebaseConfig = {
 // Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Referência ao Firestore
+// Referências
 const db = firebase.firestore();
-
-// Referência à coleção de casos
+const auth = firebase.auth();
 const casosRef = db.collection('casos');
+
+// ============================================
+// AUTENTICAÇÃO - SENHA VIA HASH SHA-256
+// ============================================
+// As senhas são verificadas como hash SHA-256.
+// O hash da senha atual é armazenado na coleção /config/auth no Firestore.
+// Para alterar a senha: atualizar o campo correspondente no documento config/auth.
+//
+// Estrutura do documento /config/auth:
+//   { hashSalaVermelha: "<sha256>", hashNac: "<sha256>", hashCc: "<sha256>" }
+//
+// Para gerar o hash de uma nova senha, execute no console do navegador:
+//   sha256('SUA_NOVA_SENHA').then(h => console.log(h))
+
+async function sha256(texto) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(texto);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verificarSenhaFirestore(senhaDigitada, campoHash) {
+  try {
+    const configDoc = await db.collection('config').doc('auth').get();
+    if (!configDoc.exists) {
+      // Fallback: aceitar qualquer senha se config não existir (primeira configuração)
+      console.warn('⚠️ Documento config/auth não encontrado. Configure as senhas no Firestore.');
+      return true;
+    }
+    const hashEsperado = configDoc.data()[campoHash];
+    if (!hashEsperado) {
+      console.warn(`⚠️ Campo ${campoHash} não encontrado em config/auth.`);
+      return true;
+    }
+    const hashDigitado = await sha256(senhaDigitada);
+    return hashDigitado === hashEsperado;
+  } catch (err) {
+    console.error('Erro ao verificar senha:', err);
+    return false;
+  }
+}
+
+async function fazerLoginAnonimo() {
+  try {
+    if (!auth.currentUser) {
+      await auth.signInAnonymously();
+    }
+    return true;
+  } catch (err) {
+    console.error('Erro ao autenticar anonimamente:', err);
+    return false;
+  }
+}
+
+async function verificarLoginCompleto(senhaDigitada, campoHash) {
+  const senhaOk = await verificarSenhaFirestore(senhaDigitada, campoHash);
+  if (!senhaOk) return false;
+  return await fazerLoginAnonimo();
+}
 
 // ============================================
 // FUNÇÕES UTILITÁRIAS
 // ============================================
 
-// Gerar ID único para o caso
 function gerarIdCaso() {
   const now = new Date();
   const dia = String(now.getDate()).padStart(2, '0');
   const mes = String(now.getMonth() + 1).padStart(2, '0');
+  const ano = String(now.getFullYear()).slice(-2);
   const timestamp = Date.now().toString().slice(-6);
-  return `PTM-${dia}${mes}-${timestamp}`;
+  return `PTM-${dia}${mes}${ano}-${timestamp}`;
 }
 
-// Formatar tempo (hh:mm:ss)
 function formatarTempo(segundos) {
   const h = Math.floor(segundos / 3600);
   const m = Math.floor((segundos % 3600) / 60);
@@ -41,19 +99,16 @@ function formatarTempo(segundos) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-// Formatar tempo curto (mm:ss)
 function formatarTempoCurto(segundos) {
   const m = Math.floor(segundos / 60);
   const s = segundos % 60;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-// Obter timestamp atual
 function agora() {
   return firebase.firestore.Timestamp.now();
 }
 
-// Calcular diferença em segundos
 function diffSegundos(timestamp) {
   if (!timestamp) return 0;
   const ms = Date.now() - (timestamp.toMillis ? timestamp.toMillis() : timestamp);
@@ -74,12 +129,12 @@ function initAudio() {
 
 function tocarAlarme(tipo = 'padrao') {
   if (!audioCtx) return;
-  
+
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
-  
+
   osc.type = 'square';
-  
+
   if (tipo === 'urgente') {
     osc.frequency.setValueAtTime(800, audioCtx.currentTime);
     osc.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.25);
@@ -90,12 +145,12 @@ function tocarAlarme(tipo = 'padrao') {
     osc.frequency.setValueAtTime(1000, audioCtx.currentTime + 0.25);
     osc.frequency.setValueAtTime(750, audioCtx.currentTime + 0.5);
   }
-  
+
   gain.gain.setValueAtTime(0, audioCtx.currentTime);
   gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05);
   gain.gain.setValueAtTime(0.1, audioCtx.currentTime + 0.95);
   gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);
-  
+
   osc.connect(gain);
   gain.connect(audioCtx.destination);
   osc.start();

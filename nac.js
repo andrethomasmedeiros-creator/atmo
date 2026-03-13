@@ -11,29 +11,23 @@ let audioAtivo = false;
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Iniciar relógio
   atualizarRelogio();
   setInterval(atualizarRelogio, 1000);
-  
-  // Atualizar timers locais
   setInterval(atualizarTimersLocais, 1000);
-  
-  // Escutar mudanças no Firestore
+
   escutarCasosNac();
-  
-  // Alarme periódico
+  inicializarConectividade();
+
   setInterval(verificarAlarmes, 3000);
 });
 
-// Atualizar relógio
 function atualizarRelogio() {
-  const now = new Date();
   const el = document.getElementById('clock');
   if (el) {
-    el.textContent = now.toLocaleTimeString('pt-BR', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit' 
+    el.textContent = new Date().toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
     });
   }
 }
@@ -56,8 +50,6 @@ function toggleAudio() {
 
 function verificarAlarmes() {
   if (!audioAtivo) return;
-  
-  // Verificar se há casos não silenciados
   const casoNaoSilenciado = casos.find(c => !c.nacAck);
   if (casoNaoSilenciado) {
     tocarAlarme('urgente');
@@ -70,8 +62,7 @@ function verificarAlarmes() {
 
 function escutarCasosNac() {
   if (unsubscribe) unsubscribe();
-  
-  // Escutar casos visíveis ao NAC
+
   unsubscribe = casosRef
     .where('status', '==', 'ATIVO')
     .where('visibleToNac', '==', true)
@@ -85,6 +76,7 @@ function escutarCasosNac() {
       atualizarStatusBadge();
     }, (error) => {
       console.error('Erro ao escutar casos:', error);
+      mostrarToast('Erro de conexão com o banco de dados. Atualize a página.', 'error');
     });
 }
 
@@ -95,26 +87,25 @@ function escutarCasosNac() {
 function renderizarCards() {
   const container = document.getElementById('casesGrid');
   const emptyState = document.getElementById('emptyState');
-  
+
   if (!container || !emptyState) return;
-  
+
   if (casos.length === 0) {
     container.innerHTML = '';
     container.style.display = 'none';
     emptyState.style.display = 'flex';
     return;
   }
-  
+
   emptyState.style.display = 'none';
   container.style.display = 'grid';
-  
+
   container.innerHTML = casos.map(c => {
     const isOnda = c.onda === 'SIM';
     const hasEsp = c.especialidades && c.especialidades.length > 0;
     const isGlow = (!c.espChegou && c.nacAcionouEspTime && diffSegundos(c.nacAcionouEspTime) >= 600) ||
                    (c.transpTime && !c.transpEnd && diffSegundos(c.transpTime) >= 600);
-    
-    // Status do especialista
+
     let espUI = '';
     if (c.espChegou) {
       espUI = '<div class="status-tag" style="background:#065f46; color:#34d399;">ESPEC. NA SALA ✅</div>';
@@ -125,20 +116,18 @@ function renderizarCards() {
     } else {
       espUI = '<div class="status-tag" style="background:#334155; color:#94a3b8;">ESPEC: AGUARDANDO LIGAÇÃO</div>';
     }
-    
-    // Timer
+
     let timerUI = '';
     if (c.transpTime && !c.transpEnd) {
       timerUI = `<div class="timer"><span class="live-timer" data-start="${c.transpTime?.toMillis?.() || c.transpTime}">--:--</span></div>`;
     } else if (c.hemoStartTime) {
       timerUI = `<div class="timer"><span class="live-timer" data-start="${c.hemoStartTime?.toMillis?.() || c.hemoStartTime}">--:--</span></div>`;
     }
-    
-    // Critérios
-    const criteriosUI = (c.criterios || []).map(cr => 
+
+    const criteriosUI = (c.criterios || []).map(cr =>
       `<span class="criterio-pill">${cr}</span>`
     ).join('');
-    
+
     return `
       <div class="case-card ${!c.nacAck ? 'needs-attention' : ''} ${isOnda ? 'onda-ativa' : ''}">
         <div class="card-header">
@@ -151,7 +140,7 @@ function renderizarCards() {
           </div>
           <div class="patient-id">${c.id}</div>
         </div>
-        
+
         <div class="card-body">
           ${isOnda ? `
             <div class="onda-alert">
@@ -159,30 +148,30 @@ function renderizarCards() {
               <p>Acionar Centro Cirúrgico e Agência Transfusional</p>
             </div>
           ` : ''}
-          
+
           <div class="realtime-status">
             <div class="label">Status em Tempo Real</div>
             <div class="value">${c.statusNac || 'AVALIANDO PACIENTE'}</div>
           </div>
-          
+
           ${hasEsp ? `
             <div class="especialidade-tag">
               <span class="icon">📞</span>
               LIGAR PARA: ${c.especialidades.join(' + ')}
             </div>
           ` : ''}
-          
+
           ${timerUI ? `
             <div class="big-timer ${isGlow ? 'critical' : ''}">
               <div class="label">Tempo desde acionamento</div>
               ${timerUI}
             </div>
           ` : ''}
-          
+
           ${criteriosUI ? `
             <div class="criterios-list">${criteriosUI}</div>
           ` : ''}
-          
+
           <div class="info-grid">
             <div class="info-item ${isOnda ? 'highlight' : ''}">
               <div class="label">Onda Vermelha</div>
@@ -193,7 +182,7 @@ function renderizarCards() {
               <div class="value">${c.espChegou ? 'PRESENTE' : 'AGUARDANDO'}</div>
             </div>
           </div>
-          
+
           <div class="action-buttons">
             ${!c.nacAck ? `
               <button class="btn btn-silenciar" onclick="silenciarAlarme('${c.id}', this)">
@@ -211,7 +200,7 @@ function renderizarCards() {
             `}
           </div>
         </div>
-        
+
         <div class="card-footer">
           <div class="footer-info">Abertura: ${formatarHora(c.createdAt)}</div>
           <div class="footer-timer">Tempo total: <span class="live-timer" data-start="${c.createdAt?.toMillis?.() || c.createdAt}">--:--</span></div>
@@ -219,15 +208,14 @@ function renderizarCards() {
       </div>
     `;
   }).join('');
-  
-  // Atualizar timers imediatamente
+
   atualizarTimersLocais();
 }
 
 function atualizarStatusBadge() {
   const badge = document.getElementById('statusBadge');
   if (!badge) return;
-  
+
   if (casos.length === 0) {
     badge.textContent = 'SISTEMA OPERACIONAL';
     badge.classList.remove('alert');
@@ -252,8 +240,7 @@ function atualizarTimersLocais() {
   document.querySelectorAll('.live-timer').forEach(el => {
     const startMs = parseInt(el.getAttribute('data-start'));
     if (startMs) {
-      const diff = Math.floor((now - startMs) / 1000);
-      el.textContent = formatarTempoCurto(diff);
+      el.textContent = formatarTempoCurto(Math.floor((now - startMs) / 1000));
     }
   });
 }
@@ -263,41 +250,33 @@ function atualizarTimersLocais() {
 // ============================================
 
 async function silenciarAlarme(id, btn) {
-  if (btn) {
-    btn.textContent = '⏳...';
-    btn.disabled = true;
-  }
-  
+  setLoading(btn, true);
+
   try {
     await casosRef.doc(id).update({
       nacAck: true,
       nacAckTime: agora()
     });
+    registrarLog('NAC_SILENCIOU_ALARME', id, {});
   } catch (error) {
     console.error('Erro ao silenciar:', error);
-    if (btn) {
-      btn.textContent = '🔊 SILENCIAR';
-      btn.disabled = false;
-    }
+    mostrarToast('Erro ao silenciar alarme. Tente novamente.', 'error');
+    setLoading(btn, false, '🔊 SILENCIAR');
   }
 }
 
 async function registrarLigacao(id, btn) {
-  if (btn) {
-    btn.textContent = '⏳...';
-    btn.disabled = true;
-  }
-  
+  setLoading(btn, true);
+
   try {
     await casosRef.doc(id).update({
       nacAcionouEspTime: agora()
     });
+    registrarLog('NAC_REGISTROU_LIGACAO', id, {});
   } catch (error) {
     console.error('Erro ao registrar ligação:', error);
-    if (btn) {
-      btn.textContent = '📞 REGISTRAR LIGAÇÃO';
-      btn.disabled = false;
-    }
+    mostrarToast('Erro ao registrar ligação. Tente novamente.', 'error');
+    setLoading(btn, false, '📞 REGISTRAR LIGAÇÃO');
   }
 }
 

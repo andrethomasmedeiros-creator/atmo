@@ -6,610 +6,14 @@
   <title>NAC - Central de Regulação | PTM</title>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    :root {
-      --bg-primary: #0a0a0f;
-      --bg-secondary: #12121a;
-      --bg-card: #1a1a24;
-      --border: #2a2a3a;
-      --text-primary: #ffffff;
-      --text-secondary: #8888a0;
-      --accent-red: #ff2d55;
-      --accent-red-glow: rgba(255, 45, 85, 0.3);
-      --accent-orange: #ff9500;
-      --accent-orange-glow: rgba(255, 149, 0, 0.3);
-      --accent-green: #30d158;
-      --accent-green-glow: rgba(48, 209, 88, 0.3);
-      --accent-blue: #0a84ff;
-      --accent-teal: #00b4aa;
-      --accent-teal-glow: rgba(0, 180, 170, 0.2);
-      --accent-purple: #bf5af2;
-    }
-
-    /* ===== TELA DE LOGIN ===== */
-    .login-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--bg-primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-    
-    .login-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 40px;
-      text-align: center;
-      max-width: 400px;
-      width: 90%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    }
-    
-    .login-box h1 {
-      font-size: 24px;
-      margin-bottom: 10px;
-      color: var(--accent-purple);
-    }
-    
-    .login-box p {
-      color: var(--text-secondary);
-      margin-bottom: 30px;
-      font-size: 14px;
-    }
-    
-    .login-box input {
-      width: 100%;
-      padding: 15px 20px;
-      font-size: 18px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      text-align: center;
-      letter-spacing: 3px;
-      margin-bottom: 20px;
-    }
-    
-    .login-box input:focus {
-      outline: none;
-      border-color: var(--accent-purple);
-      box-shadow: 0 0 20px rgba(191, 90, 242, 0.3);
-    }
-    
-    .login-box button {
-      width: 100%;
-      padding: 15px;
-      font-size: 16px;
-      font-weight: 700;
-      border: none;
-      border-radius: 12px;
-      background: var(--accent-purple);
-      color: white;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    
-    .login-box button:hover {
-      background: #d06af2;
-      transform: scale(1.02);
-    }
-    
-    .login-error {
-      color: var(--accent-red);
-      font-size: 14px;
-      margin-top: 15px;
-      display: none;
-    }
-    
-    .login-hidden {
-      display: none !important;
-    }
-
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* ===== HEADER ===== */
-    .header {
-      background: linear-gradient(180deg, #1a0a0a 0%, var(--bg-primary) 100%);
-      border-bottom: 2px solid var(--accent-red);
-      padding: 15px 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .header-logos {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-
-    .logo-hrvj {
-      height: 45px;
-      filter: drop-shadow(0 0 10px rgba(0, 180, 170, 0.3));
-    }
-
-    .logo-ceara {
-      height: 40px;
-      opacity: 0.9;
-    }
-
-    .header-title {
-      text-align: center;
-      flex: 1;
-    }
-
-    .header-title h1 {
-      font-size: 24px;
-      font-weight: 900;
-      letter-spacing: 3px;
-      color: var(--accent-orange);
-      text-shadow: 0 0 30px var(--accent-orange-glow);
-    }
-
-    .header-title span {
-      font-size: 12px;
-      color: var(--text-secondary);
-      letter-spacing: 2px;
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .header-clock {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--accent-teal);
-      text-shadow: 0 0 20px var(--accent-teal-glow);
-    }
-
-    .status-badge {
-      background: var(--accent-green);
-      color: #000;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-weight: 800;
-      font-size: 12px;
-      letter-spacing: 1px;
-      animation: pulse-badge 2s infinite;
-    }
-
-    .status-badge.alert {
-      background: var(--accent-red);
-      color: #fff;
-      animation: pulse-alert 0.5s infinite;
-    }
-
-    @keyframes pulse-badge {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-
-    @keyframes pulse-alert {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-
-    /* ===== MAIN CONTENT ===== */
-    .main-content {
-      padding: 30px;
-    }
-
-    /* ===== EMPTY STATE ===== */
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 70vh;
-      text-align: center;
-    }
-
-    .empty-state .icon {
-      font-size: 120px;
-      margin-bottom: 30px;
-      opacity: 0.3;
-    }
-
-    .empty-state h2 {
-      font-size: 36px;
-      color: var(--text-secondary);
-      margin-bottom: 10px;
-    }
-
-    .empty-state p {
-      font-size: 18px;
-      color: var(--text-secondary);
-      opacity: 0.7;
-    }
-
-    /* ===== GRID DE CASOS ===== */
-    .cases-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-      gap: 25px;
-    }
-
-    /* ===== CARD DO CASO ===== */
-    .case-card {
-      background: var(--bg-card);
-      border: 2px solid var(--border);
-      border-radius: 24px;
-      overflow: hidden;
-      transition: all 0.3s;
-      position: relative;
-    }
-
-    .case-card.needs-attention {
-      border-color: var(--accent-red);
-      animation: card-pulse 1.5s infinite;
-    }
-
-    @keyframes card-pulse {
-      0%, 100% { box-shadow: 0 0 20px var(--accent-red-glow); }
-      50% { box-shadow: 0 0 50px var(--accent-red-glow); }
-    }
-
-    .case-card.onda-ativa {
-      border-color: var(--accent-red);
-      background: linear-gradient(180deg, rgba(127, 29, 29, 0.3) 0%, var(--bg-card) 100%);
-    }
-
-    /* Card Header */
-    .card-header {
-      background: var(--bg-secondary);
-      padding: 20px 25px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .patient-info {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-
-    .patient-avatar {
-      width: 50px;
-      height: 50px;
-      background: linear-gradient(135deg, var(--accent-red), var(--accent-orange));
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      font-weight: 900;
-    }
-
-    .patient-details h3 {
-      font-size: 20px;
-      font-weight: 800;
-      margin-bottom: 4px;
-    }
-
-    .patient-details span {
-      font-size: 13px;
-      color: var(--text-secondary);
-    }
-
-    .patient-id {
-      font-family: 'JetBrains Mono', monospace;
-      background: var(--bg-primary);
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-
-    /* Card Body */
-    .card-body {
-      padding: 25px;
-    }
-
-    /* Status em Tempo Real */
-    .realtime-status {
-      background: var(--bg-primary);
-      border: 2px solid var(--accent-orange);
-      border-radius: 16px;
-      padding: 20px;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .realtime-status .label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: var(--text-secondary);
-      margin-bottom: 8px;
-    }
-
-    .realtime-status .value {
-      font-size: 18px;
-      font-weight: 800;
-      color: var(--accent-orange);
-    }
-
-    /* Timer Grande */
-    .big-timer {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .big-timer .label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: var(--text-secondary);
-      margin-bottom: 5px;
-    }
-
-    .big-timer .time {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 56px;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent-orange), #ffab00);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .big-timer.critical .time {
-      background: linear-gradient(135deg, var(--accent-red), #ff6b6b);
-      -webkit-background-clip: text;
-      animation: timer-blink 0.5s infinite;
-    }
-
-    @keyframes timer-blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    /* Info Grid */
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .info-item {
-      background: var(--bg-primary);
-      padding: 15px;
-      border-radius: 12px;
-      text-align: center;
-    }
-
-    .info-item .label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-secondary);
-      margin-bottom: 5px;
-    }
-
-    .info-item .value {
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .info-item.highlight {
-      border: 2px solid var(--accent-orange);
-    }
-
-    .info-item.highlight .value {
-      color: var(--accent-orange);
-    }
-
-    /* Especialidade Tag */
-    .especialidade-tag {
-      background: linear-gradient(135deg, var(--accent-orange), #ffab00);
-      color: #000;
-      padding: 12px 20px;
-      border-radius: 12px;
-      text-align: center;
-      font-weight: 800;
-      font-size: 16px;
-      margin-bottom: 15px;
-    }
-
-    .especialidade-tag .icon {
-      margin-right: 8px;
-    }
-
-    /* Onda Vermelha Alert */
-    .onda-alert {
-      background: linear-gradient(135deg, #7f1d1d, #991b1b);
-      border: 3px solid var(--accent-red);
-      border-radius: 16px;
-      padding: 15px 20px;
-      text-align: center;
-      animation: onda-pulse 1s infinite alternate;
-      margin-bottom: 15px;
-    }
-
-    @keyframes onda-pulse {
-      from { box-shadow: 0 0 10px rgba(255, 45, 85, 0.3); }
-      to { box-shadow: 0 0 40px rgba(255, 45, 85, 0.6); }
-    }
-
-    .onda-alert h4 {
-      font-size: 18px;
-      margin-bottom: 5px;
-    }
-
-    .onda-alert p {
-      font-size: 12px;
-      opacity: 0.9;
-    }
-
-    /* Botões de Ação */
-    .action-buttons {
-      display: flex;
-      gap: 12px;
-    }
-
-    .btn {
-      flex: 1;
-      padding: 16px;
-      border: none;
-      border-radius: 12px;
-      font-weight: 800;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .btn:active {
-      transform: scale(0.98);
-    }
-
-    .btn-silenciar {
-      background: linear-gradient(135deg, var(--accent-green), #00c853);
-      color: #fff;
-    }
-
-    .btn-ligar {
-      background: linear-gradient(135deg, var(--accent-orange), #ffab00);
-      color: #000;
-    }
-
-    .btn-silenciado {
-      background: var(--bg-primary);
-      border: 2px solid var(--accent-green);
-      color: var(--accent-green);
-    }
-
-    .btn-ligado {
-      background: var(--bg-primary);
-      border: 2px solid var(--accent-orange);
-      color: var(--accent-orange);
-    }
-
-    /* Critérios Pills */
-    .criterios-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 15px;
-    }
-
-    .criterio-pill {
-      background: rgba(255, 45, 85, 0.15);
-      border: 1px solid var(--accent-red);
-      color: var(--accent-red);
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    /* Footer do Card */
-    .card-footer {
-      background: var(--bg-secondary);
-      padding: 15px 25px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .footer-info {
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-
-    .footer-timer {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      color: var(--accent-teal);
-    }
-
-    /* ===== AUDIO INDICATOR ===== */
-    .audio-indicator {
-      position: fixed;
-      bottom: 90px;
-      right: 22px;
-      background: var(--bg-card);
-      border: 2px solid var(--border);
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.3s;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-      z-index: 8000;
-    }
-
-    .audio-indicator:hover {
-      border-color: var(--accent-teal);
-      transform: scale(1.08);
-    }
-
-    .audio-indicator.active {
-      border-color: var(--accent-green);
-      box-shadow: 0 0 18px rgba(48,209,88,0.4);
-    }
-
-    .audio-indicator .icon {
-      font-size: 22px;
-    }
-
-    .audio-indicator .text {
-      display: none;
-    }
-
-    /* ===== RESPONSIVE ===== */
-    @media (max-width: 600px) {
-      .cases-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .header {
-        padding: 10px 15px;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-
-      .header-title h1 {
-        font-size: 18px;
-      }
-
-      .big-timer .time {
-        font-size: 42px;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="nac.css">
+  <link rel="stylesheet" href="shared.css">
 </head>
 <body>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toastContainer"></div>
+
 
   <!-- TELA DE LOGIN -->
   <div class="login-overlay" id="loginOverlay">
@@ -623,38 +27,47 @@
   </div>
   <script src="runtime-config.js"></script>
   <script>
-    // Login inline para evitar erro de função não definida
-    const runtimeConfig = window.PTM_RUNTIME_CONFIG || {};
-    const SENHA_SISTEMA = runtimeConfig.SENHA_NAC || 'HRVJ2026';
-    const CHAVE_SESSAO = runtimeConfig.CHAVE_SESSAO_NAC || 'ptm_autenticado_nac';
-    
-    function verificarLogin() {
-      const senhaDigitada = document.getElementById('loginSenha').value;
+    // Login via Firebase Auth + hash SHA-256 (senha não está hardcoded)
+    const CHAVE_SESSAO = 'ptm_autenticado_nac';
+
+    async function verificarLogin() {
+      const senhaEl = document.getElementById('loginSenha');
       const errorEl = document.getElementById('loginError');
-      
-      if (senhaDigitada === SENHA_SISTEMA) {
+      const btn = document.getElementById('btnLogin');
+      const senhaDigitada = senhaEl.value;
+      if (!senhaDigitada) return;
+
+      if (btn) { btn.textContent = 'Verificando...'; btn.disabled = true; }
+
+      const ok = await verificarLoginCompleto(senhaDigitada, 'hashNac');
+
+      if (ok) {
         const expiracao = Date.now() + (24 * 60 * 60 * 1000);
         localStorage.setItem(CHAVE_SESSAO, expiracao.toString());
         document.getElementById('loginOverlay').classList.add('login-hidden');
         if (typeof iniciarSistema === 'function') iniciarSistema();
       } else {
         errorEl.style.display = 'block';
-        document.getElementById('loginSenha').value = '';
-        document.getElementById('loginSenha').focus();
+        senhaEl.value = '';
+        senhaEl.focus();
         setTimeout(() => { errorEl.style.display = 'none'; }, 3000);
       }
+
+      if (btn) { btn.textContent = 'ENTRAR'; btn.disabled = false; }
     }
-    
+
     document.getElementById('btnLogin').addEventListener('click', verificarLogin);
     document.getElementById('loginSenha').addEventListener('keypress', function(e) {
       if (e.key === 'Enter') verificarLogin();
     });
-    
+
     // Verificar sessão existente
     (function() {
       const sessao = localStorage.getItem(CHAVE_SESSAO);
       if (sessao && parseInt(sessao) > Date.now()) {
-        document.getElementById('loginOverlay').classList.add('login-hidden');
+        fazerLoginAnonimo && fazerLoginAnonimo().then(() => {
+          document.getElementById('loginOverlay').classList.add('login-hidden');
+        });
       }
     })();
   </script>
@@ -670,6 +83,7 @@
       <span>NÚCLEO DE ACESSO E REGULAÇÃO</span>
     </div>
     <div class="header-right">
+      <span id="conectividadeIndicador" class="conectividade-online">● ONLINE</span>
       <div class="status-badge" id="statusBadge">SISTEMA OPERACIONAL</div>
       <div class="header-clock" id="clock">00:00:00</div>
     </div>
@@ -776,7 +190,9 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="firebase-config.js"></script>
+  <script src="utils.js"></script>
 
   <script>
     // ===== ESTADO GLOBAL =====
@@ -1115,7 +531,7 @@
     function enviarWhatsApp(id) {
       const caso = casos.find(c => c.id === id);
       if (!caso) {
-        alert('Caso não encontrado!');
+        mostrarToast('Caso não encontrado!', 'warning');
         return;
       }
       
@@ -1233,7 +649,7 @@ ${ondaStatus}
     function gerarPDFNac(id) {
       const caso = casos.find(c => c.id === id);
       if (!caso) return;
-      if (!window.jspdf) { alert('PDF indisponível. Verifique conexão.'); return; }
+      if (!window.jspdf) { mostrarToast('PDF indisponível. Verifique conexão.', 'error'); return; }
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       const VERMELHO = [180,0,0], PRETO = [30,30,30], CINZA = [100,100,100], CINZA_CLARO = [240,240,240];
