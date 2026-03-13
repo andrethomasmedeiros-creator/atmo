@@ -2334,12 +2334,18 @@
 
     // ===== FINALIZAÇÃO =====
     async function finalizarProtocolo() {
+      // Proteção: função não pode rodar sem paciente ativo
+      if (!currentPatient) {
+        alert('Nenhum paciente selecionado.');
+        return;
+      }
+
       const prontuario = document.getElementById('inpProntuario').value;
       if (!prontuario) {
         alert('Prontuário é obrigatório!');
         return;
       }
-      
+
       const desfecho = document.getElementById('inpDesfecho').value;
       if (!desfecho) {
         alert('Selecione o desfecho!');
@@ -2347,18 +2353,21 @@
       }
 
       // ===== BLOQUEIO ONDA VERMELHA: CC deve confirmar chegada antes de finalizar =====
-      if (currentPatient && currentPatient.onda === 'SIM') {
-        if (!currentPatient.ccRecebeuPaciente) {
-          alert('⚠️ AGUARDANDO CONFIRMAÇÃO DO C.C.\n\nO Centro Cirúrgico ainda não confirmou o recebimento do paciente.\n\nAssim que o paciente chegar ao C.C., eles clicarão em "PACIENTE CHEGOU NO C.C." — então você poderá finalizar.');
-          return;
-        }
+      if (currentPatient.onda === 'SIM' && !currentPatient.ccRecebeuPaciente) {
+        alert('⚠️ AGUARDANDO CONFIRMAÇÃO DO C.C.\n\nO Centro Cirúrgico ainda não confirmou o recebimento do paciente.\n\nAssim que o paciente chegar ao C.C., eles clicarão em "PACIENTE CHEGOU NO C.C." — então você poderá finalizar.');
+        return;
       }
+
+      // IMPORTANTE: capturar o ID antes de qualquer await.
+      // O onSnapshot do Firestore pode setar currentPatient=null assim que
+      // o status mudar para FINALIZADO, causando crash se acessado depois.
+      const patientId = currentPatient.id;
 
       try {
         // Buscar dados COMPLETOS do Firebase antes de finalizar
-        const casoDoc = await casosRef.doc(currentPatient.id).get();
+        const casoDoc = await casosRef.doc(patientId).get();
         const casoAtual = casoDoc.data();
-        
+
         const dadosFinais = {
           status: 'FINALIZADO',
           prontuario: prontuario,
@@ -2368,7 +2377,7 @@
           desfecho: desfecho,
           finalizadoAt: agora()
         };
-        
+
         // Se continuar PTM, adicionar hemoderivados extras
         if (desfecho === 'Continuar PTM') {
           const extras = [];
@@ -2376,27 +2385,28 @@
           const qtdPlasma = document.getElementById('qtdPlasmaExtra')?.value || 0;
           const qtdPlaquetas = document.getElementById('qtdPlaquetasExtra')?.value || 0;
           const qtdCrio = document.getElementById('qtdCrioExtra')?.value || 0;
-          
+
           if (qtdHemacias > 0) extras.push(`Hemácias: ${qtdHemacias}U`);
           if (qtdPlasma > 0) extras.push(`Plasma: ${qtdPlasma}U`);
           if (qtdPlaquetas > 0) extras.push(`Plaquetas: ${qtdPlaquetas}U`);
           if (qtdCrio > 0) extras.push(`Crioprecipitado: ${qtdCrio}U`);
-          
+
           dadosFinais.hemoderivadosExtras = extras.join(', ');
           dadosFinais.desfecho = `Continuar PTM - ${extras.join(', ')}`;
         }
-        
-        await casosRef.doc(currentPatient.id).update(dadosFinais);
-        
-        // Combinar dados do Firebase com dados finais para planilha
-        const casoCompleto = { 
-          ...casoAtual,  // Dados completos do Firebase
-          ...dadosFinais, // Dados de finalização
-          id: currentPatient.id
+
+        // Montar casoCompleto ANTES do await update — após o update,
+        // o onSnapshot pode zerar currentPatient antes de chegarmos aqui.
+        const casoCompleto = {
+          ...casoAtual,
+          ...dadosFinais,
+          id: patientId
         };
-        
+
+        await casosRef.doc(patientId).update(dadosFinais);
+
         await enviarParaPlanilha(casoCompleto);
-        
+
         currentPatient = null;
         showPanel('empty');
         mostrarBotaoPDFFinalizacao(casoCompleto);
