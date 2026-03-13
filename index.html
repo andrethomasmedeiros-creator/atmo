@@ -1559,9 +1559,9 @@
 
     // ===== FINALIZAÇÃO =====
     async function finalizarProtocolo() {
-      // Proteção: função não pode rodar sem paciente ativo
+      // Proteção contra chamada sem paciente ativo (edge case de race condition)
       if (!currentPatient) {
-        alert('Nenhum paciente selecionado.');
+        mostrarToast('Nenhum paciente selecionado.', 'warning');
         return;
       }
 
@@ -1578,11 +1578,9 @@
       }
 
       // ===== BLOQUEIO ONDA VERMELHA: CC deve confirmar chegada antes de finalizar =====
-      if (currentPatient && currentPatient.onda === 'SIM') {
-        if (!currentPatient.ccRecebeuPaciente) {
-          mostrarToast('⚠️ AGUARDANDO CONFIRMAÇÃO DO C.C.\n\nO Centro Cirúrgico ainda não confirmou o recebimento do paciente.\n\nAssim que o paciente chegar ao C.C., eles clicarão em "PACIENTE CHEGOU NO C.C." — então você poderá finalizar.', 'warning');
-          return;
-        }
+      if (currentPatient.onda === 'SIM' && !currentPatient.ccRecebeuPaciente) {
+        mostrarToast('⚠️ AGUARDANDO CONFIRMAÇÃO DO C.C.\n\nO Centro Cirúrgico ainda não confirmou o recebimento do paciente.\n\nAssim que o paciente chegar ao C.C., eles clicarão em "PACIENTE CHEGOU NO C.C." — então você poderá finalizar.', 'warning');
+        return;
       }
 
       // IMPORTANTE: capturar o ID antes de qualquer await.
