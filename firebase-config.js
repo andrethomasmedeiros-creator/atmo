@@ -14,9 +14,8 @@ const firebaseConfig = {
 // Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Referências
+// Referências (Auth removido — não utilizado, causava SERVICE-NOT-ALLOWED)
 const db = firebase.firestore();
-const auth = firebase.auth();
 const casosRef = db.collection('casos');
 
 // ============================================
