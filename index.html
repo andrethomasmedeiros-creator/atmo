@@ -1152,7 +1152,7 @@
         document.getElementById('voiceStatusText').textContent = 'Erro';
         document.getElementById('btnOuvir').disabled = false;
         document.getElementById('btnOuvir').textContent = '🎤 OUVIR';
-        const msgs = { 'no-speech': 'Nenhuma fala detectada — tente novamente', 'not-allowed': '⛔ Microfone bloqueado — verifique as permissões', 'network': 'Erro de rede' };
+        const msgs = { 'no-speech': 'Nenhuma fala detectada — tente novamente', 'not-allowed': '⛔ Microfone bloqueado — verifique as permissões', 'network': 'Erro de rede', 'service-not-allowed': '⛔ Reconhecimento de voz não disponível neste navegador/contexto' };
         document.getElementById('voiceTranscriptEl').textContent = msgs[e.error] || 'Erro: ' + e.error;
       };
 
