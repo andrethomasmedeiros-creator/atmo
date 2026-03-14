@@ -461,52 +461,50 @@ console.log('App Sala Vermelha carregado!');
 // ==========================================
 // MÓDULO DE COMANDOS DE VOZ (HANDS-FREE)
 // ==========================================
-const btnVoz = document.getElementById('btn-voz');
 
-// Verifica se o navegador suporta a API de voz
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+// O event listener DOMContentLoaded garante que a página já carregou toda
+document.addEventListener('DOMContentLoaded', () => {
+  const btnVoz = document.getElementById('btn-voz');
+  
+  if (!btnVoz) {
+    console.error("Botão de voz não encontrado no HTML!");
+    return; 
+  }
 
-if (SpeechRecognition) {
-  const recognition = new SpeechRecognition();
-  recognition.lang = 'pt-BR'; // Configurado para entender Português do Brasil (sotaque local)
-  recognition.continuous = false; // Pára de gravar automaticamente quando o médico se cala
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  // Quando clica no botão
-  btnVoz.addEventListener('click', () => {
-    try {
-      recognition.start();
-      btnVoz.style.backgroundColor = "#28a745"; // Fica verde para avisar que está a gravar
-      btnVoz.innerHTML = "🎙️"; 
-      console.log("Microfone aberto: A escutar o médico...");
-    } catch (e) {
-      console.log("O microfone já está ligado.");
-    }
-  });
+  if (SpeechRecognition) {
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR'; 
+    recognition.continuous = false; 
 
-  // Quando o navegador entende a frase
-  recognition.onresult = (event) => {
-    const transcricao = event.results[0][0].transcript;
-    console.log("O médico disse: ", transcricao);
-    
-    // Mostra um alerta na página apenas para testarmos se funcionou
-    alert("Comando de voz reconhecido:\n\n" + transcricao); 
+    btnVoz.addEventListener('click', () => {
+      try {
+        recognition.start();
+        btnVoz.style.backgroundColor = "#28a745"; 
+        btnVoz.innerHTML = "🎙️"; 
+        console.log("Microfone aberto: A escutar o médico...");
+      } catch (e) {
+        console.log("O microfone já está ligado ou houve um erro: ", e);
+      }
+    });
 
-    // O botão volta ao normal
-    btnVoz.style.backgroundColor = "#dc3545";
-    btnVoz.innerHTML = "🎤";
-    
-    // FUTURO: Aqui ligamos a IA para ler a 'transcricao' e clicar nos botões do PTM automaticamente!
-  };
+    recognition.onresult = (event) => {
+      const transcricao = event.results[0][0].transcript;
+      alert("Comando de voz reconhecido:\n\n" + transcricao); 
+      btnVoz.style.backgroundColor = "#dc3545";
+      btnVoz.innerHTML = "🎤";
+    };
 
-  // Se houver algum erro (ex: não deu permissão ao microfone)
-  recognition.onerror = (event) => {
-    console.error("Erro no comando de voz: ", event.error);
-    alert("Erro ao usar o microfone. Verifique as permissões.");
-    btnVoz.style.backgroundColor = "#dc3545";
-    btnVoz.innerHTML = "🎤";
-  };
-} else {
-  // Se abrir num navegador muito antigo que não suporta
-  console.log("O seu navegador não suporta comandos de voz nativos.");
-  if(btnVoz) btnVoz.style.display = 'none'; 
+    recognition.onerror = (event) => {
+      console.error("Erro no comando de voz: ", event.error);
+      alert("Erro ao usar o microfone: " + event.error);
+      btnVoz.style.backgroundColor = "#dc3545";
+      btnVoz.innerHTML = "🎤";
+    };
+  } else {
+    alert("O seu navegador não suporta comandos de voz nativos.");
+    btnVoz.style.display = 'none'; 
+  }
+});
 }
