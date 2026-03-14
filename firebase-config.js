@@ -62,27 +62,12 @@ async function verificarSenhaFirestore(senhaDigitada, campoHash) {
 }
 
 async function fazerLoginAnonimo() {
-  try {
-    if (!auth.currentUser) {
-      await auth.signInAnonymously();
-    }
-    return true;
-  } catch (err) {
-    if (err.code === 'auth/operation-not-allowed') {
-      // Autenticação anônima não está habilitada no Firebase Console.
-      // O acesso ao Firestore usará as regras públicas (config já lida com isso).
-      console.warn('⚠️ Anonymous Auth não habilitado — continuando sem autenticação Firebase.');
-      return true; // Permite login: senha já foi verificada via SHA-256
-    }
-    console.error('Erro ao autenticar anonimamente:', err);
-    return false;
-  }
+  // Anonymous Auth removido — Firestore usa regras públicas + senha SHA-256 no app
+  return true;
 }
 
 async function verificarLoginCompleto(senhaDigitada, campoHash) {
-  const senhaOk = await verificarSenhaFirestore(senhaDigitada, campoHash);
-  if (!senhaOk) return false;
-  return await fazerLoginAnonimo();
+  return await verificarSenhaFirestore(senhaDigitada, campoHash);
 }
 
 // ============================================
