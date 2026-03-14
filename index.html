@@ -2786,6 +2786,56 @@ function gerarRelatorioPDF(dados) {
   const nomeArquivo = `PTM-${dados.id || 'CASO'}-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
   doc.save(nomeArquivo);
 }
+    // ===== CHAT: SOM, ESTADO E CONTROLES =====
+    // Som de notificação de chat
+    function tocarSomChat() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.4);
+        // segundo bipe
+        setTimeout(() => {
+          try {
+            const ctx2 = new (window.AudioContext || window.webkitAudioContext)();
+            const o2 = ctx2.createOscillator(); const g2 = ctx2.createGain();
+            o2.connect(g2); g2.connect(ctx2.destination);
+            o2.frequency.setValueAtTime(1100, ctx2.currentTime);
+            g2.gain.setValueAtTime(0.3, ctx2.currentTime);
+            g2.gain.exponentialRampToValueAtTime(0.001, ctx2.currentTime + 0.3);
+            o2.start(ctx2.currentTime); o2.stop(ctx2.currentTime + 0.3);
+          } catch(e) {}
+        }, 180);
+      } catch(e) {}
+    }
+
+    // Controle de badge e notificação no botão flutuante
+    let chatAberto = false;
+    let badgeCount = 0;
+
+    function abrirChat() {
+      chatAberto = true;
+      badgeCount = 0;
+      const badge = document.getElementById('chatBadge');
+      if (badge) badge.style.display = 'none';
+      const modal = document.getElementById('modalChat');
+      if (!modal) return;
+      renderizarMensagensChat();
+      modal.style.display = 'flex';
+    }
+    function fecharChat() {
+      chatAberto = false;
+      const modal = document.getElementById('modalChat');
+      if (modal) modal.style.display = 'none';
+    }
+
     // ===== INIT =====
     console.log('🔧 Executando INIT...');
     // Verificar sessão ao carregar
@@ -2844,56 +2894,6 @@ function gerarRelatorioPDF(dados) {
   </div>
 
   <!-- Audio context para notificação de chat (Web Audio API) -->
-  <script>
-    // Som de notificação de chat
-    function tocarSomChat() {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.4);
-        // segundo bipe
-        setTimeout(() => {
-          try {
-            const ctx2 = new (window.AudioContext || window.webkitAudioContext)();
-            const o2 = ctx2.createOscillator(); const g2 = ctx2.createGain();
-            o2.connect(g2); g2.connect(ctx2.destination);
-            o2.frequency.setValueAtTime(1100, ctx2.currentTime);
-            g2.gain.setValueAtTime(0.3, ctx2.currentTime);
-            g2.gain.exponentialRampToValueAtTime(0.001, ctx2.currentTime + 0.3);
-            o2.start(ctx2.currentTime); o2.stop(ctx2.currentTime + 0.3);
-          } catch(e) {}
-        }, 180);
-      } catch(e) {}
-    }
-
-    // Controle de badge e notificação no botão flutuante
-    let chatAberto = false;
-    let badgeCount = 0;
-
-    function abrirChat() {
-      chatAberto = true;
-      badgeCount = 0;
-      const badge = document.getElementById('chatBadge');
-      if (badge) badge.style.display = 'none';
-      const modal = document.getElementById('modalChat');
-      if (!modal) return;
-      renderizarMensagensChat();
-      modal.style.display = 'flex';
-    }
-    function fecharChat() {
-      chatAberto = false;
-      const modal = document.getElementById('modalChat');
-      if (modal) modal.style.display = 'none';
-    }
-  </script>
 <button id="btn-voz" style="position: fixed; bottom: 20px; right: 20px; z-index: 99999; border-radius: 50%; width: 60px; height: 60px; background-color: #dc3545; color: white; font-size: 24px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3); cursor: pointer; transition: 0.3s;">
   🎤
 </button>
