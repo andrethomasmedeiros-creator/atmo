@@ -68,6 +68,12 @@ async function fazerLoginAnonimo() {
     }
     return true;
   } catch (err) {
+    if (err.code === 'auth/operation-not-allowed') {
+      // Autenticação anônima não está habilitada no Firebase Console.
+      // O acesso ao Firestore usará as regras públicas (config já lida com isso).
+      console.warn('⚠️ Anonymous Auth não habilitado — continuando sem autenticação Firebase.');
+      return true; // Permite login: senha já foi verificada via SHA-256
+    }
     console.error('Erro ao autenticar anonimamente:', err);
     return false;
   }
