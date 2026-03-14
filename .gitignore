@@ -1,1 +1,2 @@
-runtime-config.js
+# runtime-config.js agora é commitado com valores padrão.
+# Para valores customizados no servidor, sobrescreva o arquivo no deploy.
