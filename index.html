@@ -6,818 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>PTM Sala Vermelha - HRVJ</title>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    :root {
-      --bg-primary: #0a0a0f;
-      --bg-secondary: #12121a;
-      --bg-card: #1a1a24;
-      --border: #2a2a3a;
-      --text-primary: #ffffff;
-      --text-secondary: #8888a0;
-      --accent-red: #ff2d55;
-      --accent-red-glow: rgba(255, 45, 85, 0.3);
-      --accent-orange: #ff9500;
-      --accent-orange-glow: rgba(255, 149, 0, 0.3);
-      --accent-green: #30d158;
-      --accent-green-glow: rgba(48, 209, 88, 0.3);
-      --accent-blue: #0a84ff;
-      --accent-teal: #00b4aa;
-      --accent-teal-glow: rgba(0, 180, 170, 0.2);
-    }
-
-    /* ===== TELA DE LOGIN ===== */
-    .login-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--bg-primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-    
-    .login-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 40px;
-      text-align: center;
-      max-width: 400px;
-      width: 90%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    }
-    
-    .login-box h1 {
-      font-size: 24px;
-      margin-bottom: 10px;
-      color: var(--accent-red);
-    }
-    
-    .login-box p {
-      color: var(--text-secondary);
-      margin-bottom: 30px;
-      font-size: 14px;
-    }
-    
-    .login-box input {
-      width: 100%;
-      padding: 15px 20px;
-      font-size: 18px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      text-align: center;
-      letter-spacing: 3px;
-      margin-bottom: 20px;
-    }
-    
-    .login-box input:focus {
-      outline: none;
-      border-color: var(--accent-red);
-      box-shadow: 0 0 20px var(--accent-red-glow);
-    }
-    
-    .login-box button {
-      width: 100%;
-      padding: 15px;
-      font-size: 16px;
-      font-weight: 700;
-      border: none;
-      border-radius: 12px;
-      background: var(--accent-red);
-      color: white;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    
-    .login-box button:hover {
-      background: #ff4466;
-      transform: scale(1.02);
-    }
-    
-    .login-error {
-      color: var(--accent-red);
-      font-size: 14px;
-      margin-top: 15px;
-      display: none;
-    }
-    
-    .login-hidden {
-      display: none !important;
-    }
-
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* ===== HEADER COM LOGOS ===== */
-    .header {
-      background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .header-logos {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-
-    .logo-hrvj {
-      height: 45px;
-      filter: drop-shadow(0 0 10px rgba(0, 180, 170, 0.3));
-    }
-
-    .logo-ceara {
-      height: 40px;
-      opacity: 0.9;
-    }
-
-    .header-title {
-      text-align: center;
-      flex: 1;
-    }
-
-    .header-title h1 {
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: 3px;
-      background: linear-gradient(135deg, #ff2d55, #ff6b35);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .header-title span {
-      font-size: 11px;
-      color: var(--text-secondary);
-      letter-spacing: 2px;
-    }
-
-    .header-time {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 24px;
-      font-weight: 700;
-      color: var(--accent-teal);
-      text-shadow: 0 0 20px var(--accent-teal-glow);
-    }
-
-    /* ===== LAYOUT PRINCIPAL ===== */
-    .main-container {
-      display: flex;
-      height: calc(100vh - 70px);
-    }
-
-    /* ===== SIDEBAR DE PACIENTES ===== */
-    .sidebar {
-      width: 300px;
-      background: var(--bg-secondary);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .sidebar-header {
-      padding: 20px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .btn-novo-paciente {
-      width: 100%;
-      padding: 16px;
-      background: linear-gradient(135deg, var(--accent-red), #ff6b35);
-      border: none;
-      border-radius: 12px;
-      color: white;
-      font-weight: 800;
-      font-size: 14px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      transition: all 0.2s;
-      box-shadow: 0 4px 20px var(--accent-red-glow);
-    }
-
-    .btn-novo-paciente:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 30px var(--accent-red-glow);
-    }
-
-    .btn-novo-paciente:active {
-      transform: scale(0.98);
-    }
-
-    .patients-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 15px;
-    }
-
-    .patient-card {
-      background: var(--bg-card);
-      border: 2px solid var(--border);
-      border-radius: 16px;
-      padding: 15px;
-      margin-bottom: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .patient-card::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 4px;
-      background: var(--accent-orange);
-    }
-
-    .patient-card.critical::before {
-      background: var(--accent-red);
-      animation: pulse-border 1s infinite;
-    }
-
-    .patient-card.stable::before {
-      background: var(--accent-green);
-    }
-
-    @keyframes pulse-border {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    .patient-card:hover {
-      border-color: var(--accent-teal);
-      transform: translateX(5px);
-    }
-
-    .patient-card.active {
-      border-color: var(--accent-red);
-      background: rgba(255, 45, 85, 0.05);
-    }
-
-    .patient-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 8px;
-    }
-
-    .patient-id {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      color: var(--text-secondary);
-    }
-
-    .patient-step {
-      background: var(--bg-primary);
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--accent-orange);
-      border: 1px solid var(--accent-orange);
-    }
-
-    .patient-name {
-      font-size: 16px;
-      font-weight: 800;
-      margin-bottom: 4px;
-    }
-
-    .patient-info {
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-
-    .patient-timer {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--accent-orange);
-      margin-top: 8px;
-    }
-
-    /* ===== ÁREA PRINCIPAL ===== */
-    .content-area {
-      flex: 1;
-      padding: 30px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    /* ===== STEPPER / TIMELINE ===== */
-    .stepper {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-      margin-bottom: 32px;
-      width: 100%;
-      max-width: 900px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 20px 24px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
-    }
-
-    .step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-      flex: 1;
-      transition: transform 0.2s;
-    }
-
-    .step:hover { transform: translateY(-2px); }
-
-    .step-icon {
-      width: 54px;
-      height: 54px;
-      border-radius: 50%;
-      background: var(--bg-primary);
-      border: 3px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      transition: all 0.3s;
-      position: relative;
-      z-index: 2;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    }
-
-    .step.completed .step-icon {
-      background: linear-gradient(135deg, #27c75a, #30d158);
-      border-color: var(--accent-green);
-      box-shadow: 0 0 22px rgba(48,209,88,0.5), 0 2px 10px rgba(0,0,0,0.3);
-    }
-
-    .step.active .step-icon {
-      background: linear-gradient(135deg, #e0203e, #ff2d55);
-      border-color: var(--accent-red);
-      box-shadow: 0 0 28px rgba(255,45,85,0.6), 0 2px 10px rgba(0,0,0,0.3);
-      animation: pulse-glow 1.5s infinite;
-    }
-
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 20px rgba(255,45,85,0.4), 0 2px 10px rgba(0,0,0,0.3); }
-      50% { box-shadow: 0 0 44px rgba(255,45,85,0.8), 0 2px 10px rgba(0,0,0,0.3); }
-    }
-
-    .step-label {
-      font-size: 10px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--text-secondary);
-      margin-top: 10px;
-      text-align: center;
-      max-width: 80px;
-      line-height: 1.3;
-    }
-
-    .step.completed .step-label { color: var(--accent-green); }
-    .step.active .step-label { color: var(--accent-red); }
-
-    .step-connector {
-      flex: 1;
-      height: 4px;
-      background: var(--border);
-      margin: 0 -8px;
-      margin-top: -28px;
-      position: relative;
-      z-index: 1;
-      border-radius: 2px;
-      transition: background 0.4s;
-    }
-
-    .step-connector.completed {
-      background: linear-gradient(90deg, var(--accent-green), #27c75a);
-      box-shadow: 0 0 8px rgba(48,209,88,0.4);
-    }
-
-    /* ===== CARD PRINCIPAL ===== */
-    .main-card {
-      background: var(--bg-card);
-      border: 2px solid var(--border);
-      border-radius: 24px;
-      padding: 30px;
-      width: 100%;
-      max-width: 700px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    }
-
-    .card-header {
-      text-align: center;
-      margin-bottom: 25px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .card-header h2 {
-      font-size: 22px;
-      font-weight: 900;
-      margin-bottom: 5px;
-    }
-
-    .card-header p {
-      color: var(--text-secondary);
-      font-size: 14px;
-    }
-
-    /* ===== GRID DE CRITÉRIOS ===== */
-    .criteria-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 25px;
-    }
-
-    .criteria-item {
-      background: var(--bg-primary);
-      border: 2px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .criteria-item:hover {
-      border-color: var(--text-secondary);
-    }
-
-    .criteria-item.selected {
-      border-color: var(--accent-red);
-      background: rgba(255, 45, 85, 0.08);
-    }
-
-    .criteria-item.selected::after {
-      content: '✓';
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      width: 24px;
-      height: 24px;
-      background: var(--accent-red);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    .criteria-item.other-criteria {
-      padding: 15px;
-    }
-
-    .criteria-item.other-criteria .criteria-icon {
-      font-size: 22px;
-      margin-bottom: 5px;
-    }
-
-    .criteria-item.other-criteria .criteria-label {
-      font-size: 12px;
-    }
-
-    .criteria-item.other-criteria.selected {
-      border-color: var(--accent-orange);
-      background: rgba(255, 149, 0, 0.08);
-    }
-
-    .criteria-item.other-criteria.selected::after {
-      background: var(--accent-orange);
-      width: 20px;
-      height: 20px;
-      font-size: 12px;
-    }
-
-    .criteria-icon {
-      font-size: 28px;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-primary);
-    }
-
-    .criteria-icon svg {
-      width: 36px;
-      height: 36px;
-    }
-
-    .criteria-label {
-      font-weight: 700;
-      font-size: 13px;
-    }
-
-    .criteria-desc {
-      font-size: 11px;
-      color: var(--text-secondary);
-      margin-top: 4px;
-    }
-
-    /* ===== BOTÕES DE AÇÃO ===== */
-    .action-btn {
-      width: 100%;
-      padding: 20px;
-      border: none;
-      border-radius: 16px;
-      font-weight: 800;
-      font-size: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-    }
-
-    .action-btn:active {
-      transform: scale(0.98);
-    }
-
-    .action-btn.primary {
-      background: linear-gradient(135deg, var(--accent-red), #ff6b35);
-      color: white;
-      box-shadow: 0 4px 25px var(--accent-red-glow);
-    }
-
-    .action-btn.primary:hover {
-      box-shadow: 0 6px 35px var(--accent-red-glow);
-    }
-
-    .action-btn.secondary {
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      border: 2px solid var(--border);
-    }
-
-    .action-btn.success {
-      background: linear-gradient(135deg, var(--accent-green), #00c853);
-      color: white;
-      box-shadow: 0 4px 25px var(--accent-green-glow);
-    }
-
-    .action-btn.warning {
-      background: linear-gradient(135deg, var(--accent-orange), #ffab00);
-      color: white;
-      box-shadow: 0 4px 25px var(--accent-orange-glow);
-    }
-
-    /* ===== TIMER GRANDE ===== */
-    .big-timer {
-      text-align: center;
-      padding: 30px;
-      background: var(--bg-primary);
-      border-radius: 20px;
-      margin-bottom: 25px;
-    }
-
-    .big-timer-label {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: var(--text-secondary);
-      margin-bottom: 10px;
-    }
-
-    .big-timer-value {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 72px;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent-orange), #ffab00);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 60px var(--accent-orange-glow);
-    }
-
-    .big-timer.critical .big-timer-value {
-      background: linear-gradient(135deg, var(--accent-red), #ff6b35);
-      -webkit-background-clip: text;
-      animation: timer-pulse 0.5s infinite;
-    }
-
-    @keyframes timer-pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-
-    /* ===== ONDA VERMELHA ALERT ===== */
-    .onda-alert {
-      background: linear-gradient(135deg, #7f1d1d, #991b1b);
-      border: 3px solid var(--accent-red);
-      border-radius: 20px;
-      padding: 25px;
-      text-align: center;
-      animation: onda-pulse 1s infinite alternate;
-      margin-bottom: 20px;
-    }
-
-    @keyframes onda-pulse {
-      from { box-shadow: 0 0 20px rgba(255, 45, 85, 0.3); }
-      to { box-shadow: 0 0 50px rgba(255, 45, 85, 0.6); }
-    }
-
-    .onda-alert h3 {
-      font-size: 24px;
-      margin-bottom: 8px;
-    }
-
-    .onda-alert p {
-      font-size: 14px;
-      opacity: 0.9;
-    }
-
-    /* ===== INPUTS ===== */
-    .input-group {
-      margin-bottom: 15px;
-    }
-
-    .input-group label {
-      display: block;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-secondary);
-      margin-bottom: 8px;
-    }
-
-    .input-group input,
-    .input-group select {
-      width: 100%;
-      padding: 16px;
-      background: var(--bg-primary);
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      color: var(--text-primary);
-      font-size: 16px;
-      font-weight: 600;
-      font-family: inherit;
-      transition: all 0.2s;
-    }
-
-    .input-group input:focus,
-    .input-group select:focus {
-      outline: none;
-      border-color: var(--accent-teal);
-      box-shadow: 0 0 20px var(--accent-teal-glow);
-    }
-
-    .input-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-    }
-
-    /* ===== ESPECIALIDADES CARDS ===== */
-    .esp-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 25px;
-    }
-
-    .esp-item {
-      background: var(--bg-primary);
-      border: 2px solid var(--border);
-      border-radius: 16px;
-      padding: 18px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .esp-item:hover {
-      border-color: var(--accent-orange);
-    }
-
-    .esp-item.selected {
-      border-color: var(--accent-orange);
-      background: rgba(255, 149, 0, 0.1);
-    }
-
-    .esp-item .icon {
-      font-size: 28px;
-      margin-bottom: 8px;
-    }
-
-    .esp-item .name {
-      font-weight: 700;
-      font-size: 13px;
-    }
-
-    /* ===== STATUS INFO ===== */
-    .status-bar {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .status-item {
-      flex: 1;
-      background: var(--bg-primary);
-      border-radius: 12px;
-      padding: 15px;
-      text-align: center;
-    }
-
-    .status-item .label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-secondary);
-      margin-bottom: 5px;
-    }
-
-    .status-item .value {
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    /* ===== PAINÉIS ===== */
-    .panel { display: none; }
-    .panel.active { display: block; animation: fadeIn 0.3s ease; }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ===== EMPTY STATE ===== */
-    .empty-state {
-      text-align: center;
-      padding: 60px 30px;
-    }
-
-    .empty-state .icon {
-      font-size: 80px;
-      margin-bottom: 20px;
-      opacity: 0.3;
-    }
-
-    .empty-state h3 {
-      font-size: 24px;
-      margin-bottom: 10px;
-      color: var(--text-secondary);
-    }
-
-    .empty-state p {
-      color: var(--text-secondary);
-      font-size: 14px;
-    }
-
-    /* ===== RESPONSIVE ===== */
-    @media (max-width: 900px) {
-      .sidebar { width: 250px; }
-      .stepper { flex-wrap: wrap; gap: 10px; }
-      .step-connector { display: none; }
-    }
-
-    @media (max-width: 700px) {
-      .main-container { flex-direction: column; }
-      .sidebar { width: 100%; height: auto; max-height: 200px; }
-      .patients-list { display: flex; overflow-x: auto; padding: 10px; gap: 10px; }
-      .patient-card { min-width: 200px; margin: 0; }
-      .content-area { padding: 15px; }
-      .main-card { padding: 20px; }
-      .header-logos { gap: 8px; }
-      .logo-hrvj { height: 35px; }
-      .logo-ceara { height: 30px; }
-    }
-  </style>
+  <link rel="stylesheet" href="sala-vermelha.css">
+  <link rel="stylesheet" href="shared.css">
 </head>
 <body>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toastContainer"></div>
 
   <!-- TELA DE LOGIN -->
   <div class="login-overlay" id="loginOverlay">
@@ -841,6 +36,7 @@
       <span>PROTOCOLO DE TRANSFUSÃO MACIÇA</span>
     </div>
     <div class="header-time" id="clock">00:00:00</div>
+    <span id="conectividadeIndicador" class="conectividade-online">● ONLINE</span>
   </header>
 
   <div class="main-container">
@@ -926,7 +122,40 @@
             <h2>📋 Identificação do Paciente</h2>
             <p>Dados iniciais para rastreabilidade</p>
           </div>
-          
+
+          <!-- PREENCHIMENTO POR VOZ -->
+          <button id="btnVozIdentificacao" class="voice-btn" onclick="toggleVoz()">
+            🎤 PREENCHER POR VOZ
+          </button>
+          <div id="voicePainel" class="voice-panel">
+            <div class="voice-indicator">
+              <div class="voice-mic-icon" id="voiceMicIcon">🎤</div>
+              <div>
+                <div style="font-weight:700;font-size:13px;color:var(--accent-green)" id="voiceStatusText">Pronto para ouvir</div>
+                <div style="font-size:11px;color:var(--text-secondary)">Fale: local, sexo, faixa etária, raça e idade</div>
+              </div>
+            </div>
+            <div class="voice-example">
+              Ex: <strong>"Box 3, masculino, adulto, pardo, 35 anos"</strong>
+            </div>
+            <div class="voice-transcript" id="voiceTranscriptEl">Toque em <strong>Ouvir</strong> para começar...</div>
+            <div class="voice-fields-preview" id="voiceFieldsPreview">
+              <div class="voice-field-tag empty" id="vfIdent">📍 Local: —</div>
+              <div class="voice-field-tag empty" id="vfSexo">⚥ Sexo: —</div>
+              <div class="voice-field-tag empty" id="vfFaixa">🎂 Faixa: —</div>
+              <div class="voice-field-tag empty" id="vfRaca">👤 Raça: —</div>
+              <div class="voice-field-tag empty" id="vfIdade">📅 Idade: —</div>
+            </div>
+            <div class="voice-actions">
+              <button onclick="iniciarVoz()" style="padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent-green),#00c853);color:white;font-weight:800;font-size:13px;cursor:pointer;" id="btnOuvir">
+                🎤 OUVIR
+              </button>
+              <button onclick="aplicarVoz()" id="btnAplicarVoz" style="padding:12px;border:none;border-radius:10px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);font-weight:700;font-size:13px;cursor:pointer;" disabled>
+                ✅ APLICAR
+              </button>
+            </div>
+          </div>
+
           <div class="input-group">
             <label>Local / Identificação Rápida</label>
             <input type="text" id="inpIdent" placeholder="Ex: Box 1, Politrauma, Motoqueiro...">
@@ -1502,8 +731,10 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="runtime-config.js"></script>
   <script src="firebase-config.js"></script>
+  <script src="utils.js"></script>
 
   <script>
     console.log('🚀 Iniciando script PTM...');
@@ -1576,12 +807,26 @@
             const updated = patients.find(p => p.id === currentPatient.id);
             if (updated) {
               const ccConfirmouAntes = currentPatient.ccRecebeuPaciente;
+              const espChegouAntes = currentPatient.espChegou;
               currentPatient = updated; // Atualiza com dados mais recentes
               // Se chat aberto, re-renderizar automaticamente
               if (chatAberto) renderizarMensagensChat();
               // Se CC acabou de confirmar chegada, atualizar botão Onda Vermelha em tempo real
               if (!ccConfirmouAntes && updated.ccRecebeuPaciente) {
                 if (typeof atualizarBotaoOndaVermelha === 'function') atualizarBotaoOndaVermelha();
+              }
+              // Sincronizar botão especialista em tempo real (evita ficar travado)
+              if (espChegouAntes !== updated.espChegou) {
+                const btn = document.getElementById('btnEspChegou');
+                if (btn) {
+                  if (updated.espChegou) {
+                    btn.textContent = '✅ PRESENTE';
+                    btn.disabled = true;
+                  } else {
+                    btn.textContent = '👨‍⚕️ ESPECIALISTA CHEGOU NA SALA';
+                    btn.disabled = false;
+                  }
+                }
               }
             } else {
               // Paciente foi finalizado
@@ -1687,7 +932,7 @@
     // ===== NAVEGAÇÃO ENTRE ETAPAS =====
     function navegarParaEtapa(etapa) {
       if (!currentPatient) {
-        alert('Selecione um paciente primeiro!');
+        mostrarToast('Selecione um paciente primeiro!', 'warning');
         return;
       }
       
@@ -1705,7 +950,7 @@
       
       // Etapa 1 (identificação) não pode ser editada após iniciar
       if (etapa === 1) {
-        alert('A identificação não pode ser alterada após iniciar o protocolo.');
+        mostrarToast('A identificação não pode ser alterada após iniciar o protocolo.', 'warning');
         return;
       }
       
@@ -1714,7 +959,7 @@
       const currentStepNum = stepMap[currentPatient.currentPanel] || 0;
       
       if (etapa > currentStepNum) {
-        alert('Você ainda não chegou nesta etapa. Complete as etapas anteriores primeiro.');
+        mostrarToast('Você ainda não chegou nesta etapa. Complete as etapas anteriores primeiro.', 'warning');
         return;
       }
       
@@ -1830,14 +1075,232 @@
       btnFlutuante.onclick = () => gerarRelatorioPDF(window.ultimoCasoFinalizado);
     }
 
+    // ===== PREENCHIMENTO POR VOZ (PAINEL 1) =====
+    let vozRec = null;
+    let vozDados = {};
+    let vozTranscriptFinal = '';
+
+    function toggleVoz() {
+      const painel = document.getElementById('voicePainel');
+      const btn = document.getElementById('btnVozIdentificacao');
+      if (painel.classList.contains('visible')) {
+        pararVoz();
+        painel.classList.remove('visible');
+        btn.textContent = '🎤 PREENCHER POR VOZ';
+        btn.classList.remove('active');
+      } else {
+        painel.classList.add('visible');
+        btn.innerHTML = '⏹ FECHAR VOZ';
+        btn.classList.add('active');
+      }
+    }
+
+    function iniciarVoz() {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) {
+        document.getElementById('voiceTranscriptEl').innerHTML = '❌ Navegador não suportado.<br>Use <strong>Chrome</strong> ou <strong>Edge</strong>.';
+        return;
+      }
+      pararVoz();
+      vozDados = {};
+      vozTranscriptFinal = '';
+      atualizarPreviewVoz();
+
+      const btn = document.getElementById('btnAplicarVoz');
+      if (btn) { btn.disabled = true; btn.style.color = 'var(--text-secondary)'; btn.style.background = 'var(--bg-card)'; }
+
+      vozRec = new SpeechRec();
+      vozRec.lang = 'pt-BR';
+      vozRec.continuous = false;
+      vozRec.interimResults = true;
+      vozRec.maxAlternatives = 1;
+
+      vozRec.onstart = () => {
+        document.getElementById('voiceMicIcon').classList.add('pulse');
+        document.getElementById('voiceStatusText').textContent = 'OUVINDO...';
+        document.getElementById('voiceTranscriptEl').textContent = 'Fale agora...';
+        document.getElementById('btnOuvir').disabled = true;
+        document.getElementById('btnOuvir').textContent = '🔴 OUVINDO';
+      };
+
+      vozRec.onresult = (e) => {
+        let transcript = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          transcript += e.results[i][0].transcript;
+        }
+        document.getElementById('voiceTranscriptEl').textContent = transcript;
+        if (e.results[e.results.length - 1].isFinal) {
+          vozTranscriptFinal = transcript;
+          vozDados = parsearVoz(transcript);
+          atualizarPreviewVoz();
+        }
+      };
+
+      vozRec.onend = () => {
+        document.getElementById('voiceMicIcon').classList.remove('pulse');
+        document.getElementById('voiceStatusText').textContent = vozTranscriptFinal ? 'Reconhecido!' : 'Tente novamente';
+        document.getElementById('btnOuvir').disabled = false;
+        document.getElementById('btnOuvir').textContent = '🔄 OUVIR NOVAMENTE';
+        if (vozTranscriptFinal) {
+          document.getElementById('voiceTranscriptEl').innerHTML = '✅ <em>' + vozTranscriptFinal + '</em>';
+          const btn = document.getElementById('btnAplicarVoz');
+          if (btn) { btn.disabled = false; btn.style.color = 'white'; btn.style.background = 'linear-gradient(135deg,var(--accent-red),#ff6b35)'; }
+        }
+      };
+
+      vozRec.onerror = (e) => {
+        document.getElementById('voiceMicIcon').classList.remove('pulse');
+        document.getElementById('voiceStatusText').textContent = 'Erro';
+        document.getElementById('btnOuvir').disabled = false;
+        document.getElementById('btnOuvir').textContent = '🎤 OUVIR';
+        const msgs = { 'no-speech': 'Nenhuma fala detectada — tente novamente', 'not-allowed': '⛔ Microfone bloqueado — verifique as permissões', 'network': 'Erro de rede' };
+        document.getElementById('voiceTranscriptEl').textContent = msgs[e.error] || 'Erro: ' + e.error;
+      };
+
+      vozRec.start();
+    }
+
+    function pararVoz() {
+      if (vozRec) {
+        try { vozRec.stop(); } catch(e) {}
+        vozRec = null;
+      }
+      const icon = document.getElementById('voiceMicIcon');
+      if (icon) icon.classList.remove('pulse');
+    }
+
+    function aplicarVoz() {
+      if (!vozTranscriptFinal && !Object.values(vozDados).some(v => v)) return;
+      if (vozDados.ident) document.getElementById('inpIdent').value = vozDados.ident;
+      if (vozDados.sexo) document.getElementById('inpSexo').value = vozDados.sexo;
+      if (vozDados.faixaEtaria) document.getElementById('inpFaixaEtaria').value = vozDados.faixaEtaria;
+      if (vozDados.raca) document.getElementById('inpRaca').value = vozDados.raca;
+      if (vozDados.idade) document.getElementById('inpIdade').value = vozDados.idade;
+      pararVoz();
+      document.getElementById('voicePainel').classList.remove('visible');
+      document.getElementById('btnVozIdentificacao').textContent = '🎤 PREENCHER POR VOZ';
+      document.getElementById('btnVozIdentificacao').classList.remove('active');
+    }
+
+    function atualizarPreviewVoz() {
+      const campos = [
+        { id: 'vfIdent', label: '📍 Local', key: 'ident' },
+        { id: 'vfSexo', label: '⚥ Sexo', key: 'sexo' },
+        { id: 'vfFaixa', label: '🎂 Faixa', key: 'faixaEtaria' },
+        { id: 'vfRaca', label: '👤 Raça', key: 'raca' },
+        { id: 'vfIdade', label: '📅 Idade', key: 'idade' },
+      ];
+      for (const c of campos) {
+        const el = document.getElementById(c.id);
+        if (!el) continue;
+        const val = vozDados[c.key];
+        if (val) {
+          el.textContent = c.label + ': ' + val;
+          el.className = 'voice-field-tag';
+        } else {
+          el.textContent = c.label + ': —';
+          el.className = 'voice-field-tag empty';
+        }
+      }
+    }
+
+    function parsearVoz(texto) {
+      const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const campos = { ident: '', sexo: '', faixaEtaria: '', raca: '', idade: '' };
+      const tokens = texto.split(/[,;]+/).map(s => s.trim()).filter(Boolean);
+
+      for (const token of tokens) {
+        const tok = norm(token);
+        if (!campos.sexo) {
+          if (/\b(mascul|homem|macho)\b/.test(tok)) { campos.sexo = 'Masculino'; continue; }
+          if (/\b(femin|mulher|moca)\b/.test(tok)) { campos.sexo = 'Feminino'; continue; }
+        }
+        if (!campos.faixaEtaria) {
+          if (/pediatr|crianca|infantil/.test(tok)) { campos.faixaEtaria = 'Pediátrico (<14 anos)'; continue; }
+          if (/adolescen/.test(tok)) { campos.faixaEtaria = 'Adolescente (15-18 anos)'; continue; }
+          if (/\bjovem\b/.test(tok)) { campos.faixaEtaria = 'Jovem Adulto (18-30 anos)'; continue; }
+          if (/\badulto\b/.test(tok) && !/idos/.test(tok)) { campos.faixaEtaria = 'Adulto (30-60 anos)'; continue; }
+          if (/idos[oa]|idoso|idosa|velho|velha/.test(tok)) { campos.faixaEtaria = 'Idoso (>60 anos)'; continue; }
+        }
+        if (!campos.raca) {
+          if (/\bbranca?\b/.test(tok)) { campos.raca = 'Branca'; continue; }
+          if (/\b(pret[ao]|negr[ao])\b/.test(tok)) { campos.raca = 'Preta'; continue; }
+          if (/\bpard[ao]\b/.test(tok)) { campos.raca = 'Parda'; continue; }
+          if (/\bamarela?\b/.test(tok)) { campos.raca = 'Amarela'; continue; }
+          if (/\b(indigena|indio|india)\b/.test(tok)) { campos.raca = 'Indígena'; continue; }
+        }
+        if (!campos.idade) {
+          const m = tok.match(/\b(\d{1,3})\s*(anos?)?\b/);
+          if (m && parseInt(m[1]) > 0 && parseInt(m[1]) < 130) { campos.idade = m[1]; continue; }
+          const ext = parsearNumPorExtenso(tok);
+          if (ext > 0 && ext < 130) { campos.idade = String(ext); continue; }
+        }
+        if (!campos.ident && token.length > 1) { campos.ident = token; }
+      }
+
+      // Fallback: sem vírgulas, tentar extrair da frase completa
+      if (tokens.length === 1) {
+        const tok = norm(texto);
+        if (!campos.sexo) {
+          if (/\b(mascul|homem)\b/.test(tok)) campos.sexo = 'Masculino';
+          else if (/\b(femin|mulher)\b/.test(tok)) campos.sexo = 'Feminino';
+        }
+        if (!campos.faixaEtaria) {
+          if (/pediatr|crianca/.test(tok)) campos.faixaEtaria = 'Pediátrico (<14 anos)';
+          else if (/adolescen/.test(tok)) campos.faixaEtaria = 'Adolescente (15-18 anos)';
+          else if (/\bjovem\b/.test(tok)) campos.faixaEtaria = 'Jovem Adulto (18-30 anos)';
+          else if (/\badulto\b/.test(tok)) campos.faixaEtaria = 'Adulto (30-60 anos)';
+          else if (/idos[oa]/.test(tok)) campos.faixaEtaria = 'Idoso (>60 anos)';
+        }
+        if (!campos.raca) {
+          if (/\bbranca?\b/.test(tok)) campos.raca = 'Branca';
+          else if (/\b(pret[ao]|negr[ao])\b/.test(tok)) campos.raca = 'Preta';
+          else if (/\bpard[ao]\b/.test(tok)) campos.raca = 'Parda';
+          else if (/\bamarela?\b/.test(tok)) campos.raca = 'Amarela';
+          else if (/\b(indigena|indio)\b/.test(tok)) campos.raca = 'Indígena';
+        }
+        if (!campos.idade) {
+          const m = tok.match(/\b(\d{1,3})\s*(anos?)\b/);
+          if (m) campos.idade = m[1];
+          else { const ext = parsearNumPorExtenso(tok); if (ext > 0 && ext < 130) campos.idade = String(ext); }
+        }
+      }
+      return campos;
+    }
+
+    function parsearNumPorExtenso(t) {
+      const NUMS = {
+        'zero':0,'um':1,'uma':1,'dois':2,'duas':2,'tres':3,'quatro':4,'cinco':5,
+        'seis':6,'sete':7,'oito':8,'nove':9,'dez':10,'onze':11,'doze':12,
+        'treze':13,'catorze':14,'quatorze':14,'quinze':15,'dezesseis':16,
+        'dezessete':17,'dezoito':18,'dezenove':19,'vinte':20,
+        'trinta':30,'quarenta':40,'cinquenta':50,'sessenta':60,
+        'setenta':70,'oitenta':80,'noventa':90,'cem':100
+      };
+      let total = 0, found = false;
+      for (const [w, v] of Object.entries(NUMS)) {
+        if (t.includes(w)) { total += v; found = true; }
+      }
+      return found ? total : 0;
+    }
+
     // ===== NOVO PACIENTE =====
     function novoPaciente() {
       limparCacheUltimoCasoFinalizado();
 
       // Apenas limpar o paciente atual da seleção, mas manter a lista
       currentPatient = null;
-      
-      // Limpar campos do formulário
+
+      // Fechar painel de voz se estiver aberto
+      pararVoz();
+      vozDados = {};
+      vozTranscriptFinal = '';
+      const voicePainel = document.getElementById('voicePainel');
+      if (voicePainel) voicePainel.classList.remove('visible');
+      const btnVoz = document.getElementById('btnVozIdentificacao');
+      if (btnVoz) { btnVoz.textContent = '🎤 PREENCHER POR VOZ'; btnVoz.classList.remove('active'); }
+
+      // Limpar campos do formulário (Painel 1)
       document.getElementById('inpIdent').value = '';
       document.getElementById('inpSexo').value = '';
       document.getElementById('inpIdade').value = '';
@@ -1845,6 +1308,8 @@
       if (faixaEl) faixaEl.value = '';
       const racaEl = document.getElementById('inpRaca');
       if (racaEl) racaEl.value = '';
+
+      // Limpar campos do Painel 6 (auditoria) — evita cache do paciente anterior
       document.getElementById('inpProntuario').value = '';
       document.getElementById('inpNome').value = '';
       document.getElementById('inpNasc').value = '';
@@ -1855,12 +1320,29 @@
         if (el) el.value = 0;
       });
       verificarDesfechoPTM();
-      
+      const areaContinuar = document.getElementById('areaContinuarPTM');
+      if (areaContinuar) areaContinuar.style.display = 'none';
+
+      // Restaurar botões do Painel 6 ao estado padrão
+      const btnAreaFinalizar = document.getElementById('btnAreaFinalizar');
+      const btnAreaSalvar = document.getElementById('btnAreaSalvar');
+      if (btnAreaFinalizar) btnAreaFinalizar.style.display = 'block';
+      if (btnAreaSalvar) btnAreaSalvar.style.display = 'none';
+
+      // Esconder botão PDF pós-finalização
+      const btnPDF = document.getElementById('btnImprimirPDFFinal');
+      if (btnPDF) btnPDF.style.display = 'none';
+
+
       // Limpar seleções de critérios e especialistas
       document.querySelectorAll('.criteria-item.selected').forEach(el => el.classList.remove('selected'));
       document.querySelectorAll('.esp-item.selected').forEach(el => el.classList.remove('selected'));
       updateCriteriaCounter();
-      
+
+      // Resetar botão especialista
+      const btnEsp = document.getElementById('btnEspChegou');
+      if (btnEsp) { btnEsp.textContent = '👨‍⚕️ ESPECIALISTA CHEGOU NA SALA'; btnEsp.disabled = false; }
+
       // Resetar etapas do painel 5b
       const etapa1 = document.getElementById('etapa5b-1');
       const etapa2 = document.getElementById('etapa5b-2');
@@ -1868,7 +1350,7 @@
       if (etapa1) etapa1.style.display = 'block';
       if (etapa2) etapa2.style.display = 'none';
       if (etapa3) etapa3.style.display = 'none';
-      
+
       // Resetar checkboxes de hemoderivados
       ['chkHemacias', 'chkPlasma', 'chkPlaquetas', 'chkCrio'].forEach(id => {
         const el = document.getElementById(id);
@@ -1878,10 +1360,10 @@
         const el = document.getElementById(id);
         if (el) { el.value = ''; el.disabled = true; }
       });
-      
+
       // Atualizar a sidebar para remover destaque do paciente anterior
       renderPatients();
-      
+
       // Mostrar painel de identificação
       showPanel('1');
     }
@@ -1889,14 +1371,16 @@
     // ===== INICIAR PROTOCOLO (FIREBASE) =====
     async function iniciarProtocolo() {
       const ident = document.getElementById('inpIdent').value;
-      if (!ident) {
-        alert('Preencha a identificação do paciente!');
+      const erroIdent = validarIdentificacao(ident);
+      if (erroIdent) {
+        mostrarToast(erroIdent, 'warning');
+        document.getElementById('inpIdent').focus();
         return;
       }
 
       const faixaEtaria = document.getElementById('inpFaixaEtaria').value;
       if (!faixaEtaria) {
-        alert('Selecione a faixa etária!');
+        mostrarToast('Selecione a faixa etária!', 'warning');
         return;
       }
 
@@ -1921,6 +1405,7 @@
       
       try {
         await casosRef.doc(id).set(novoCaso);
+        registrarLog('PROTOCOLO_INICIADO', id, { ident: novoCaso.ident, sexo: novoCaso.sexo, idade: novoCaso.idade });
         console.log('✅ Paciente criado:', id);
         currentPatient = novoCaso;
         limparCacheUltimoCasoFinalizado();
@@ -1928,7 +1413,7 @@
         showPanel('2');
       } catch (error) {
         console.error('Erro ao criar caso:', error);
-        alert('Erro ao criar caso. Tente novamente.');
+        mostrarToast('Erro ao criar caso. Tente novamente.', 'error');
       }
     }
 
@@ -1954,7 +1439,7 @@
       const otherSelected = [...document.querySelectorAll('.criteria-item.other-criteria.selected')].map(el => el.dataset.value);
       
       if (mainSelected.length < 2) {
-        alert('⚠️ Selecione pelo menos 2 CRITÉRIOS PRINCIPAIS do protocolo!');
+        mostrarToast('⚠️ Selecione pelo menos 2 CRITÉRIOS PRINCIPAIS do protocolo!', 'warning');
         return;
       }
       
@@ -1972,7 +1457,7 @@
         showPanel('3');
       } catch (error) {
         console.error('Erro ao salvar critérios:', error);
-        alert('Erro ao salvar. Tente novamente.');
+        mostrarToast('Erro ao salvar. Tente novamente.', 'error');
       }
     }
 
@@ -1984,7 +1469,7 @@
     async function acionarEspecialista() {
       const selected = [...document.querySelectorAll('.esp-item.selected')].map(el => el.dataset.value);
       if (selected.length === 0) {
-        alert('Selecione pelo menos um especialista!');
+        mostrarToast('Selecione pelo menos um especialista!', 'warning');
         return;
       }
       
@@ -2001,24 +1486,31 @@
         showPanel('4');
       } catch (error) {
         console.error('Erro ao acionar especialista:', error);
-        alert('Erro ao salvar. Tente novamente.');
+        mostrarToast('Erro ao salvar. Tente novamente.', 'error');
       }
     }
 
     async function especialistaChegou() {
-      document.getElementById('btnEspChegou').textContent = '✅ PRESENTE';
-      document.getElementById('btnEspChegou').disabled = true;
+      const btn = document.getElementById('btnEspChegou');
+      if (!btn || btn.disabled) return; // Evita duplo clique
+      btn.disabled = true;
+      btn.textContent = '⏳ REGISTRANDO...';
       stopTimer('timerEsp');
-      
+
       try {
         await casosRef.doc(currentPatient.id).update({
           espChegou: true,
           espChegouTime: agora(),
           statusNac: 'ESPECIALISTA NA SALA - DECIDINDO ONDA'
         });
+        btn.textContent = '✅ PRESENTE';
         registrarHistorico('👨‍⚕️ Especialista chegou na sala');
       } catch (error) {
         console.error('Erro:', error);
+        // Reverter estado do botão em caso de falha
+        btn.disabled = false;
+        btn.textContent = '👨‍⚕️ ESPECIALISTA CHEGOU NA SALA';
+        alert('Erro ao registrar chegada. Tente novamente.');
       }
     }
 
@@ -2034,6 +1526,7 @@
           statusNac: statusText,
           ondaTime: agora()
         });
+        registrarLog('ONDA_DEFINIDA', currentPatient.id, { onda: valor });
         
         // Atualizar estado local
         currentPatient.onda = valor;
@@ -2046,7 +1539,7 @@
         showPanel(nextPanel);
       } catch (error) {
         console.error('Erro:', error);
-        alert('Erro ao salvar. Tente novamente.');
+        mostrarToast('Erro ao salvar. Tente novamente.', 'error');
       }
     }
 
@@ -2157,7 +1650,7 @@
       }
       
       if (hemoderivados.length === 0) {
-        alert('Adicione pelo menos um hemoderivado (use os botões + e -)!');
+        mostrarToast('Adicione pelo menos um hemoderivado (use os botões + e -)!', 'warning');
         return;
       }
       
@@ -2179,7 +1672,7 @@
         document.getElementById('etapa5b-2').style.display = 'block';
       } catch (error) {
         console.error('Erro:', error);
-        alert('Erro ao salvar. Tente novamente.');
+        mostrarToast('Erro ao salvar. Tente novamente.', 'error');
       }
     }
 
@@ -2205,7 +1698,7 @@
         
       } catch (error) {
         console.error('Erro:', error);
-        alert('Erro ao salvar. Tente novamente.');
+        mostrarToast('Erro ao salvar. Tente novamente.', 'error');
       }
     }
 
@@ -2300,11 +1793,11 @@
     async function finalizarHemotransfusao() {
       // Verificar tempo mínimo e coleta
       if (!tempoMinimo30Atingido) {
-        alert('Aguarde pelo menos 30 minutos de hemotransfusão!');
+        mostrarToast('Aguarde pelo menos 30 minutos de hemotransfusão!', 'warning');
         return;
       }
       if (!document.getElementById('chkColetaConfirmada').checked) {
-        alert('Confirme que os exames de controle foram coletados!');
+        mostrarToast('Confirme que os exames de controle foram coletados!', 'warning');
         return;
       }
       
@@ -2338,27 +1831,27 @@
 
     // ===== FINALIZAÇÃO =====
     async function finalizarProtocolo() {
-      // Proteção: função não pode rodar sem paciente ativo
+      // Proteção contra chamada sem paciente ativo (edge case de race condition)
       if (!currentPatient) {
-        alert('Nenhum paciente selecionado.');
+        mostrarToast('Nenhum paciente selecionado.', 'warning');
         return;
       }
 
       const prontuario = document.getElementById('inpProntuario').value;
       if (!prontuario) {
-        alert('Prontuário é obrigatório!');
+        mostrarToast('Prontuário é obrigatório!', 'warning');
         return;
       }
 
       const desfecho = document.getElementById('inpDesfecho').value;
       if (!desfecho) {
-        alert('Selecione o desfecho!');
+        mostrarToast('Selecione o desfecho!', 'warning');
         return;
       }
 
       // ===== BLOQUEIO ONDA VERMELHA: CC deve confirmar chegada antes de finalizar =====
       if (currentPatient.onda === 'SIM' && !currentPatient.ccRecebeuPaciente) {
-        alert('⚠️ AGUARDANDO CONFIRMAÇÃO DO C.C.\n\nO Centro Cirúrgico ainda não confirmou o recebimento do paciente.\n\nAssim que o paciente chegar ao C.C., eles clicarão em "PACIENTE CHEGOU NO C.C." — então você poderá finalizar.');
+        mostrarToast('⚠️ AGUARDANDO CONFIRMAÇÃO DO C.C.\n\nO Centro Cirúrgico ainda não confirmou o recebimento do paciente.\n\nAssim que o paciente chegar ao C.C., eles clicarão em "PACIENTE CHEGOU NO C.C." — então você poderá finalizar.', 'warning');
         return;
       }
 
@@ -2408,17 +1901,20 @@
         };
 
         await casosRef.doc(patientId).update(dadosFinais);
+        // Após este await, currentPatient pode ser null (onSnapshot dispara ao mudar status)
+        // Por isso usamos patientId e casoCompleto já capturados acima
 
         await enviarParaPlanilha(casoCompleto);
 
         currentPatient = null;
         showPanel('empty');
         mostrarBotaoPDFFinalizacao(casoCompleto);
-        
-        alert('✅ Protocolo finalizado com sucesso!\n\nDados salvos na planilha.\n\nClique em "Imprimir PDF" para baixar o relatório.');
+
+
+        mostrarToast('✅ Protocolo finalizado com sucesso!\n\nDados salvos na planilha.\n\nClique em "Imprimir PDF" para baixar o relatório.', 'success');
       } catch (error) {
         console.error('Erro ao finalizar:', error);
-        alert('Erro ao finalizar. Tente novamente.');
+        mostrarToast('Erro ao finalizar. Tente novamente.', 'error');
       }
 
     }
@@ -2806,7 +2302,7 @@
     async function salvarDadosAuditoria() {
       const prontuario = document.getElementById('inpProntuario').value;
       if (!prontuario) {
-        alert('Prontuário é obrigatório!');
+        mostrarToast('Prontuário é obrigatório!', 'warning');
         return;
       }
       
@@ -2821,7 +2317,7 @@
           statusNac: 'DADOS PREENCHIDOS - AGUARDANDO C.C.'
         });
         
-        alert('✅ Dados salvos!\n\nO protocolo será encerrado pelo Centro Cirúrgico quando o paciente chegar na mesa.');
+        mostrarToast('✅ Dados salvos!\n\nO protocolo será encerrado pelo Centro Cirúrgico quando o paciente chegar na mesa.', 'success');
         
         // Voltar para tela vazia ou próximo paciente
         currentPatient = null;
@@ -2829,7 +2325,7 @@
         renderPatients();
       } catch (error) {
         console.error('Erro ao salvar:', error);
-        alert('Erro ao salvar. Tente novamente.');
+        mostrarToast('Erro ao salvar. Tente novamente.', 'error');
       }
     }
 
@@ -2842,32 +2338,45 @@
       return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
 
-    // ===== SISTEMA DE LOGIN =====
-    const SENHA_SISTEMA = runtimeConfig.SENHA_SALA || 'HRVJ2026';
-    const CHAVE_SESSAO = runtimeConfig.CHAVE_SESSAO_SALA || 'ptm_autenticado_sala';
-    
-    function verificarLogin() {
-      const senhaDigitada = document.getElementById('loginSenha').value;
+    // ===== SISTEMA DE LOGIN (via Firebase Auth + hash SHA-256) =====
+    // Senha não está mais hardcoded aqui. Verificação via /config/auth no Firestore.
+    const CHAVE_SESSAO = 'ptm_autenticado_sala';
+
+    async function verificarLogin() {
+      const senhaEl = document.getElementById('loginSenha');
       const errorEl = document.getElementById('loginError');
-      
-      if (senhaDigitada === SENHA_SISTEMA) {
+      const btn = document.querySelector('#loginOverlay button');
+      const senhaDigitada = senhaEl.value;
+
+      if (!senhaDigitada) return;
+
+      if (btn) { btn.textContent = 'Verificando...'; btn.disabled = true; }
+
+      const ok = await verificarLoginCompleto(senhaDigitada, 'hashSalaVermelha');
+
+      if (ok) {
         const expiracao = Date.now() + (24 * 60 * 60 * 1000);
         localStorage.setItem(CHAVE_SESSAO, expiracao.toString());
         document.getElementById('loginOverlay').classList.add('login-hidden');
         iniciarSistema();
       } else {
         errorEl.style.display = 'block';
-        document.getElementById('loginSenha').value = '';
-        document.getElementById('loginSenha').focus();
+        senhaEl.value = '';
+        senhaEl.focus();
         setTimeout(() => { errorEl.style.display = 'none'; }, 3000);
       }
+
+      if (btn) { btn.textContent = 'ENTRAR'; btn.disabled = false; }
     }
-    
+
     function verificarSessao() {
       const sessao = localStorage.getItem(CHAVE_SESSAO);
       if (sessao && parseInt(sessao) > Date.now()) {
-        document.getElementById('loginOverlay').classList.add('login-hidden');
-        iniciarSistema();
+        // Re-autenticar anonimamente para manter sessão Firebase
+        fazerLoginAnonimo().then(() => {
+          document.getElementById('loginOverlay').classList.add('login-hidden');
+          iniciarSistema();
+        });
       } else {
         localStorage.removeItem(CHAVE_SESSAO);
         document.getElementById('loginSenha').focus();
@@ -2879,6 +2388,7 @@
       escutarCasos();
       escutarChatGeral();
       iniciarMonitoramentoParado();
+      inicializarConectividade();
     }
     // ===== CONTADOR DE UNIDADES =====
     function iniciarContadorUnidades() {

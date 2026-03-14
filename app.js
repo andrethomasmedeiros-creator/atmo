@@ -13,26 +13,22 @@ let unsubscribe = null;
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Iniciar relógio
   atualizarRelogio();
   setInterval(atualizarRelogio, 1000);
-  
-  // Escutar mudanças no Firestore
+
   escutarCasos();
-  
-  // Inicializar áudio no primeiro clique
+  inicializarConectividade();
+
   document.body.addEventListener('click', initAudio, { once: true });
 });
 
-// Atualizar relógio
 function atualizarRelogio() {
-  const now = new Date();
   const el = document.getElementById('clock');
   if (el) {
-    el.textContent = now.toLocaleTimeString('pt-BR', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit' 
+    el.textContent = new Date().toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
     });
   }
 }
@@ -42,10 +38,8 @@ function atualizarRelogio() {
 // ============================================
 
 function escutarCasos() {
-  // Cancelar listener anterior se existir
   if (unsubscribe) unsubscribe();
-  
-  // Escutar casos ativos em tempo real
+
   unsubscribe = casosRef
     .where('status', '==', 'ATIVO')
     .orderBy('createdAt', 'desc')
@@ -55,19 +49,18 @@ function escutarCasos() {
         patients.push({ id: doc.id, ...doc.data() });
       });
       renderizarPacientes();
-      
-      // Se não há paciente selecionado e existem pacientes, selecionar o primeiro
+
       if (!currentPatient && patients.length > 0) {
         selecionarPaciente(patients[0].id);
       }
-      
-      // Se o paciente atual foi finalizado, limpar tela
+
       if (currentPatient && !patients.find(p => p.id === currentPatient.id)) {
         currentPatient = null;
         mostrarPainel('empty');
       }
     }, (error) => {
       console.error('Erro ao escutar casos:', error);
+      mostrarToast('Erro de conexão com o banco de dados. Atualize a página.', 'error');
     });
 }
 
@@ -78,14 +71,14 @@ function escutarCasos() {
 function renderizarPacientes() {
   const lista = document.getElementById('patientsList');
   if (!lista) return;
-  
+
   if (patients.length === 0) {
     lista.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 30px;">Nenhum paciente ativo</div>';
     return;
   }
-  
+
   lista.innerHTML = patients.map(p => `
-    <div class="patient-card ${p.id === currentPatient?.id ? 'active' : ''} ${p.currentPanel >= 4 ? 'critical' : ''}" 
+    <div class="patient-card ${p.id === currentPatient?.id ? 'active' : ''} ${p.currentPanel >= 4 ? 'critical' : ''}"
          onclick="selecionarPaciente('${p.id}')">
       <div class="patient-header">
         <div class="patient-id">${p.id}</div>
@@ -100,8 +93,7 @@ function renderizarPacientes() {
 
 function calcularTempoDecorrido(timestamp) {
   if (!timestamp) return '00:00';
-  const segundos = diffSegundos(timestamp);
-  return formatarTempoCurto(segundos);
+  return formatarTempoCurto(diffSegundos(timestamp));
 }
 
 // ============================================
@@ -118,13 +110,13 @@ function mostrarPainel(panelId) {
 function atualizarStepper(step) {
   const stepMap = { 'empty': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5a': 5, '5b': 5, '6': 5 };
   const currentStep = stepMap[step] || 0;
-  
+
   document.querySelectorAll('.step').forEach((el, idx) => {
     el.classList.remove('active', 'completed');
     if (idx + 1 < currentStep) el.classList.add('completed');
     if (idx + 1 === currentStep) el.classList.add('active');
   });
-  
+
   document.querySelectorAll('.step-connector').forEach((el, idx) => {
     el.classList.remove('completed');
     if (idx + 1 < currentStep) el.classList.add('completed');
@@ -135,32 +127,52 @@ function atualizarStepper(step) {
 // AÇÕES DO PROTOCOLO
 // ============================================
 
-// Novo paciente
 function novoPaciente() {
   currentPatient = null;
   mostrarPainel('1');
-  
-  // Limpar formulário
-  document.getElementById('inpIdent').value = '';
-  document.getElementById('inpSexo').value = '';
-  document.getElementById('inpIdade').value = '';
+
+  const campos = ['inpIdent', 'inpSexo', 'inpIdade'];
+  campos.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.value = '';
+      limparErroCampo(el);
+    }
+  });
 }
 
-// Iniciar protocolo
 async function iniciarProtocolo() {
-  const ident = document.getElementById('inpIdent').value;
-  if (!ident) {
-    alert('Preencha a identificação do paciente!');
+  const identEl = document.getElementById('inpIdent');
+  const idadeEl = document.getElementById('inpIdade');
+  const ident = identEl?.value?.trim() || '';
+  const idade = idadeEl?.value?.trim() || '';
+
+  // Validação
+  const erroIdent = validarIdentificacao(ident);
+  if (erroIdent) {
+    mostrarErroCampo(identEl, erroIdent);
+    identEl.focus();
     return;
   }
-  
+  limparErroCampo(identEl);
+
+  const erroIdade = validarIdade(idade);
+  if (erroIdade) {
+    mostrarErroCampo(idadeEl, erroIdade);
+    idadeEl.focus();
+    return;
+  }
+  limparErroCampo(idadeEl);
+
+  const btn = document.getElementById('btnIniciarProtocolo');
+  setLoading(btn, true);
+
   const id = gerarIdCaso();
-  
   const novoCaso = {
-    id: id,
-    ident: ident,
-    sexo: document.getElementById('inpSexo').value || 'Não Informado',
-    idade: document.getElementById('inpIdade').value || 'Não Informado',
+    id,
+    ident,
+    sexo: document.getElementById('inpSexo')?.value || 'Não Informado',
+    idade: idade || 'Não Informado',
     status: 'ATIVO',
     currentPanel: 2,
     visibleToNac: false,
@@ -170,58 +182,55 @@ async function iniciarProtocolo() {
     criteriosOutros: [],
     especialidades: []
   };
-  
+
   try {
     await casosRef.doc(id).set(novoCaso);
     currentPatient = novoCaso;
     mostrarPainel('2');
+    registrarLog('PROTOCOLO_INICIADO', id, { ident, sexo: novoCaso.sexo, idade: novoCaso.idade });
   } catch (error) {
     console.error('Erro ao criar caso:', error);
-    alert('Erro ao criar caso. Tente novamente.');
+    mostrarToast('Erro ao criar protocolo. Verifique a conexão e tente novamente.', 'error');
+  } finally {
+    setLoading(btn, false);
   }
 }
 
-// Selecionar paciente existente
 function selecionarPaciente(id) {
   const paciente = patients.find(p => p.id === id);
-  if (paciente) {
-    currentPatient = paciente;
-    renderizarPacientes();
-    
-    // Restaurar seleções de critérios
-    document.querySelectorAll('.criteria-item').forEach(el => {
-      el.classList.remove('selected');
-      if (paciente.criterios?.includes(el.dataset.value) || 
-          paciente.criteriosOutros?.includes(el.dataset.value)) {
-        el.classList.add('selected');
-      }
-    });
-    
-    // Restaurar seleções de especialidades
-    document.querySelectorAll('.esp-item').forEach(el => {
-      el.classList.remove('selected');
-      if (paciente.especialidades?.includes(el.dataset.value)) {
-        el.classList.add('selected');
-      }
-    });
-    
-    // Mostrar painel correto
-    mostrarPainel(paciente.currentPanel?.toString() || '2');
-    
-    // Reiniciar timers se necessário
-    if (paciente.nacTime && !paciente.especialidades?.length) {
-      iniciarTimer('timerNac', paciente.nacTime);
+  if (!paciente) return;
+
+  currentPatient = paciente;
+  renderizarPacientes();
+
+  document.querySelectorAll('.criteria-item').forEach(el => {
+    el.classList.remove('selected');
+    if (paciente.criterios?.includes(el.dataset.value) ||
+        paciente.criteriosOutros?.includes(el.dataset.value)) {
+      el.classList.add('selected');
     }
-    if (paciente.espTime && !paciente.espChegou) {
-      iniciarTimer('timerEsp', paciente.espTime);
+  });
+
+  document.querySelectorAll('.esp-item').forEach(el => {
+    el.classList.remove('selected');
+    if (paciente.especialidades?.includes(el.dataset.value)) {
+      el.classList.add('selected');
     }
-    if (paciente.transpTime && !paciente.transpEnd) {
-      iniciarTimer('timerTransp', paciente.transpTime);
-    }
+  });
+
+  mostrarPainel(paciente.currentPanel?.toString() || '2');
+
+  if (paciente.nacTime && !paciente.especialidades?.length) {
+    iniciarTimer('timerNac', paciente.nacTime);
+  }
+  if (paciente.espTime && !paciente.espChegou) {
+    iniciarTimer('timerEsp', paciente.espTime);
+  }
+  if (paciente.transpTime && !paciente.transpEnd) {
+    iniciarTimer('timerTransp', paciente.transpTime);
   }
 }
 
-// Toggle critérios
 function toggleCriteria(el) {
   el.classList.toggle('selected');
   atualizarContadorCriterios();
@@ -230,10 +239,10 @@ function toggleCriteria(el) {
 function atualizarContadorCriterios() {
   const mainCount = document.querySelectorAll('.criteria-item.main-criteria.selected').length;
   const otherCount = document.querySelectorAll('.criteria-item.other-criteria.selected').length;
-  
+
   let text = `${mainCount} critérios principais`;
   if (otherCount > 0) text += ` + ${otherCount} de suporte`;
-  
+
   const counter = document.getElementById('criteriaCounter');
   if (counter) {
     counter.textContent = text;
@@ -241,16 +250,18 @@ function atualizarContadorCriterios() {
   }
 }
 
-// Confirmar critérios
 async function confirmarCriterios() {
   const mainSelected = [...document.querySelectorAll('.criteria-item.main-criteria.selected')].map(el => el.dataset.value);
   const otherSelected = [...document.querySelectorAll('.criteria-item.other-criteria.selected')].map(el => el.dataset.value);
-  
+
   if (mainSelected.length < 2) {
-    alert('⚠️ Selecione pelo menos 2 CRITÉRIOS PRINCIPAIS do protocolo!');
+    mostrarToast('Selecione pelo menos 2 CRITÉRIOS PRINCIPAIS do protocolo!', 'warning');
     return;
   }
-  
+
+  const btn = document.getElementById('btnConfirmarCriterios');
+  setLoading(btn, true);
+
   try {
     await casosRef.doc(currentPatient.id).update({
       criterios: mainSelected,
@@ -260,29 +271,33 @@ async function confirmarCriterios() {
       statusNac: 'SELECIONANDO MÉDICO ESPECIALISTA',
       nacTime: agora()
     });
-    
+
     iniciarTimer('timerNac', firebase.firestore.Timestamp.now());
     mostrarPainel('3');
+    registrarLog('CRITERIOS_CONFIRMADOS', currentPatient.id, { criterios: mainSelected, criteriosOutros: otherSelected });
   } catch (error) {
     console.error('Erro ao salvar critérios:', error);
-    alert('Erro ao salvar. Tente novamente.');
+    mostrarToast('Erro ao salvar critérios. Verifique a conexão e tente novamente.', 'error');
+  } finally {
+    setLoading(btn, false);
   }
 }
 
-// Toggle especialidades
 function toggleEsp(el) {
   el.classList.toggle('selected');
 }
 
-// Acionar especialista
 async function acionarEspecialista() {
   const selected = [...document.querySelectorAll('.esp-item.selected')].map(el => el.dataset.value);
-  
+
   if (selected.length === 0) {
-    alert('⚠️ Selecione pelo menos um especialista!');
+    mostrarToast('Selecione pelo menos um especialista!', 'warning');
     return;
   }
-  
+
+  const btn = document.getElementById('btnAcionarEsp');
+  setLoading(btn, true);
+
   try {
     await casosRef.doc(currentPatient.id).update({
       especialidades: selected,
@@ -291,79 +306,95 @@ async function acionarEspecialista() {
       espTime: agora(),
       nacAck: false
     });
-    
+
     pararTimer('timerNac');
     iniciarTimer('timerEsp', firebase.firestore.Timestamp.now());
     mostrarPainel('4');
+    registrarLog('ESPECIALISTA_ACIONADO', currentPatient.id, { especialidades: selected });
   } catch (error) {
     console.error('Erro ao acionar especialista:', error);
-    alert('Erro ao salvar. Tente novamente.');
+    mostrarToast('Erro ao acionar especialista. Verifique a conexão e tente novamente.', 'error');
+  } finally {
+    setLoading(btn, false);
   }
 }
 
-// Especialista chegou
 async function especialistaChegou() {
   const btn = document.getElementById('btnEspChegou');
-  if (btn) {
-    btn.textContent = '✅ PRESENTE';
-    btn.disabled = true;
-  }
-  
+  setLoading(btn, true);
+
   pararTimer('timerEsp');
-  
+
   try {
     await casosRef.doc(currentPatient.id).update({
       espChegou: true,
       espChegouTime: agora(),
       statusNac: 'DECIDINDO ONDA VERMELHA'
     });
+    registrarLog('ESPECIALISTA_CHEGOU', currentPatient.id, {});
   } catch (error) {
     console.error('Erro ao registrar chegada:', error);
+    mostrarToast('Erro ao registrar chegada do especialista.', 'error');
+    setLoading(btn, false, '✅ REGISTRAR CHEGADA');
   }
 }
 
-// Ativar Onda Vermelha
 async function ativarOnda(valor) {
-  const nextPanel = valor === 'SIM' ? '5a' : '5b';
-  const statusText = valor === 'SIM' ? 'ACIONANDO TRANSPORTE (C.C.)' : 'SOLICITANDO LABORATÓRIO E AGÊNCIA';
-  
-  try {
-    await casosRef.doc(currentPatient.id).update({
-      onda: valor,
-      currentPanel: nextPanel,
-      statusNac: statusText,
-      ondaTime: agora(),
-      ccAck: valor === 'SIM' ? false : null
-    });
-    
-    mostrarPainel(nextPanel);
-  } catch (error) {
-    console.error('Erro ao registrar onda:', error);
-    alert('Erro ao salvar. Tente novamente.');
-  }
+  mostrarConfirmacao(
+    valor === 'SIM' ? 'Ativar Onda Vermelha?' : 'Confirmar SEM Onda Vermelha?',
+    valor === 'SIM'
+      ? 'Isso acionará o Centro Cirúrgico e a Agência Transfusional imediatamente.'
+      : 'O protocolo seguirá sem acionar o Centro Cirúrgico.',
+    async () => {
+      const nextPanel = valor === 'SIM' ? '5a' : '5b';
+      const statusText = valor === 'SIM' ? 'ACIONANDO TRANSPORTE (C.C.)' : 'SOLICITANDO LABORATÓRIO E AGÊNCIA';
+
+      try {
+        await casosRef.doc(currentPatient.id).update({
+          onda: valor,
+          currentPanel: nextPanel,
+          statusNac: statusText,
+          ondaTime: agora(),
+          ccAck: valor === 'SIM' ? false : null
+        });
+
+        mostrarPainel(nextPanel);
+        registrarLog('ONDA_DEFINIDA', currentPatient.id, { onda: valor });
+      } catch (error) {
+        console.error('Erro ao registrar onda:', error);
+        mostrarToast('Erro ao registrar decisão de Onda Vermelha. Tente novamente.', 'error');
+      }
+    }
+  );
 }
 
-// Iniciar transporte
 async function iniciarTransporte() {
-  document.getElementById('btnTranspStart').style.display = 'none';
-  document.getElementById('btnTranspEnd').style.display = 'block';
-  
+  const btnStart = document.getElementById('btnTranspStart');
+  const btnEnd = document.getElementById('btnTranspEnd');
+  setLoading(btnStart, true);
+
   try {
     await casosRef.doc(currentPatient.id).update({
       transpTime: agora(),
       statusNac: 'TRANSPORTE A CAMINHO DO C.C.'
     });
-    
+
+    if (btnStart) btnStart.style.display = 'none';
+    if (btnEnd) btnEnd.style.display = 'block';
     iniciarTimer('timerTransp', firebase.firestore.Timestamp.now());
+    registrarLog('TRANSPORTE_INICIADO', currentPatient.id, {});
   } catch (error) {
     console.error('Erro ao iniciar transporte:', error);
+    mostrarToast('Erro ao iniciar transporte. Tente novamente.', 'error');
+    setLoading(btnStart, false);
   }
 }
 
-// Finalizar transporte
 async function finalizarTransporte() {
+  const btn = document.getElementById('btnTranspEnd');
+  setLoading(btn, true);
   pararTimer('timerTransp');
-  
+
   try {
     await casosRef.doc(currentPatient.id).update({
       transpEnd: true,
@@ -371,60 +402,86 @@ async function finalizarTransporte() {
       currentPanel: '6',
       statusNac: 'PACIENTE NO C.C. (AGUARDANDO AUDITORIA)'
     });
-    
+
     mostrarPainel('6');
+    registrarLog('TRANSPORTE_FINALIZADO', currentPatient.id, {});
   } catch (error) {
     console.error('Erro ao finalizar transporte:', error);
+    mostrarToast('Erro ao finalizar transporte. Tente novamente.', 'error');
+    setLoading(btn, false);
   }
 }
 
-// Avançar para hemoderivados (onda NÃO)
 async function avancarHemo() {
+  const btn = document.getElementById('btnAvancarHemo');
+  setLoading(btn, true);
+
   try {
     await casosRef.doc(currentPatient.id).update({
       currentPanel: '6',
       labReq: true,
-      statusNac: 'SOLICITANDO HEMODERIVADOS'
+      statusNac: 'SOLICITANDO HEMODERIVADOS',
+      hemoStartTime: agora()
     });
-    
+
     mostrarPainel('6');
+    registrarLog('HEMO_SOLICITADO', currentPatient.id, {});
   } catch (error) {
     console.error('Erro ao avançar:', error);
+    mostrarToast('Erro ao avançar. Tente novamente.', 'error');
+    setLoading(btn, false);
   }
 }
 
-// Finalizar protocolo
 async function finalizarProtocolo() {
-  const prontuario = document.getElementById('inpProntuario').value;
-  if (!prontuario) {
-    alert('Prontuário é obrigatório!');
+  const prontuarioEl = document.getElementById('inpProntuario');
+  const desfechoEl = document.getElementById('inpDesfecho');
+  const prontuario = prontuarioEl?.value?.trim() || '';
+  const desfecho = desfechoEl?.value || '';
+
+  // Validações
+  const erroProntuario = validarProntuario(prontuario);
+  if (erroProntuario) {
+    mostrarErroCampo(prontuarioEl, erroProntuario);
+    prontuarioEl.focus();
     return;
   }
-  
-  const desfecho = document.getElementById('inpDesfecho').value;
+  limparErroCampo(prontuarioEl);
+
   if (!desfecho) {
-    alert('Selecione o desfecho!');
+    mostrarToast('Selecione o desfecho do protocolo!', 'warning');
     return;
   }
-  
-  try {
-    await casosRef.doc(currentPatient.id).update({
-      status: 'FINALIZADO',
-      prontuario: prontuario,
-      nome: document.getElementById('inpNome').value || 'Não Informado',
-      dataNasc: document.getElementById('inpNasc').value || 'Não Informado',
-      medico: document.getElementById('inpMedico').value || 'Não Informado',
-      desfecho: desfecho,
-      finalizadoAt: agora()
-    });
-    
-    currentPatient = null;
-    mostrarPainel('empty');
-    alert('✅ Protocolo finalizado com sucesso!');
-  } catch (error) {
-    console.error('Erro ao finalizar:', error);
-    alert('Erro ao finalizar. Tente novamente.');
-  }
+
+  mostrarConfirmacao(
+    'Finalizar Protocolo PTM?',
+    `Isso encerrará o protocolo para o paciente <strong>${currentPatient.ident}</strong>. Esta ação não pode ser desfeita.`,
+    async () => {
+      const btn = document.getElementById('btnFinalizarProtocolo');
+      setLoading(btn, true);
+
+      try {
+        await casosRef.doc(currentPatient.id).update({
+          status: 'FINALIZADO',
+          prontuario,
+          nome: document.getElementById('inpNome')?.value?.trim() || 'Não Informado',
+          dataNasc: document.getElementById('inpNasc')?.value || 'Não Informado',
+          medico: document.getElementById('inpMedico')?.value?.trim() || 'Não Informado',
+          desfecho,
+          finalizadoAt: agora()
+        });
+
+        registrarLog('PROTOCOLO_FINALIZADO', currentPatient.id, { desfecho, prontuario });
+        currentPatient = null;
+        mostrarPainel('empty');
+        mostrarToast('Protocolo finalizado com sucesso!', 'success');
+      } catch (error) {
+        console.error('Erro ao finalizar:', error);
+        mostrarToast('Erro ao finalizar protocolo. Tente novamente.', 'error');
+        setLoading(btn, false);
+      }
+    }
+  );
 }
 
 // ============================================
@@ -433,16 +490,14 @@ async function finalizarProtocolo() {
 
 function iniciarTimer(elementId, timestamp) {
   if (timers[elementId]) clearInterval(timers[elementId]);
-  
+
   const startMs = timestamp.toMillis ? timestamp.toMillis() : timestamp;
-  
+
   timers[elementId] = setInterval(() => {
     const diff = Math.floor((Date.now() - startMs) / 1000);
     const el = document.getElementById(elementId);
     if (el) {
       el.textContent = formatarTempoCurto(diff);
-      
-      // Alerta visual se passar de 10 min
       if (diff >= 600 && el.parentElement) {
         el.parentElement.classList.add('critical');
       }

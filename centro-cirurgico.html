@@ -6,552 +6,13 @@
   <title>Centro Cirúrgico | PTM Sala Vermelha</title>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    :root {
-      --bg-primary: #0a0a0f;
-      --bg-secondary: #12121a;
-      --bg-card: #1a1a24;
-      --border: #2a2a3a;
-      --text-primary: #ffffff;
-      --text-secondary: #8888a0;
-      --accent-red: #ff2d55;
-      --accent-red-glow: rgba(255, 45, 85, 0.3);
-      --accent-orange: #ff9500;
-      --accent-orange-glow: rgba(255, 149, 0, 0.3);
-      --accent-green: #30d158;
-      --accent-green-glow: rgba(48, 209, 88, 0.3);
-      --accent-blue: #0a84ff;
-      --accent-teal: #00b4aa;
-      --accent-teal-glow: rgba(0, 180, 170, 0.2);
-    }
-
-    /* ===== TELA DE LOGIN ===== */
-    .login-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--bg-primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-    
-    .login-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 40px;
-      text-align: center;
-      max-width: 400px;
-      width: 90%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    }
-    
-    .login-box h1 {
-      font-size: 24px;
-      margin-bottom: 10px;
-      color: var(--accent-teal);
-    }
-    
-    .login-box p {
-      color: var(--text-secondary);
-      margin-bottom: 30px;
-      font-size: 14px;
-    }
-    
-    .login-box input {
-      width: 100%;
-      padding: 15px 20px;
-      font-size: 18px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      text-align: center;
-      letter-spacing: 3px;
-      margin-bottom: 20px;
-    }
-    
-    .login-box input:focus {
-      outline: none;
-      border-color: var(--accent-teal);
-      box-shadow: 0 0 20px var(--accent-teal-glow);
-    }
-    
-    .login-box button {
-      width: 100%;
-      padding: 15px;
-      font-size: 16px;
-      font-weight: 700;
-      border: none;
-      border-radius: 12px;
-      background: var(--accent-teal);
-      color: white;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    
-    .login-box button:hover {
-      background: #00c8bb;
-      transform: scale(1.02);
-    }
-    
-    .login-error {
-      color: var(--accent-red);
-      font-size: 14px;
-      margin-top: 15px;
-      display: none;
-    }
-    
-    .login-hidden {
-      display: none !important;
-    }
-
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* ===== HEADER ===== */
-    .header {
-      background: linear-gradient(180deg, #0a1a0a 0%, var(--bg-primary) 100%);
-      border-bottom: 2px solid var(--accent-green);
-      padding: 15px 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .header-logos {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-
-    .logo-hrvj {
-      height: 45px;
-      filter: drop-shadow(0 0 10px rgba(0, 180, 170, 0.3));
-    }
-
-    .logo-ceara {
-      height: 40px;
-      opacity: 0.9;
-    }
-
-    .header-title {
-      text-align: center;
-      flex: 1;
-    }
-
-    .header-title h1 {
-      font-size: 24px;
-      font-weight: 900;
-      letter-spacing: 3px;
-      color: var(--accent-green);
-      text-shadow: 0 0 30px var(--accent-green-glow);
-    }
-
-    .header-title span {
-      font-size: 12px;
-      color: var(--text-secondary);
-      letter-spacing: 2px;
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .header-clock {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--accent-teal);
-      text-shadow: 0 0 20px var(--accent-teal-glow);
-    }
-
-    .status-badge {
-      background: var(--accent-green);
-      color: #000;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-weight: 800;
-      font-size: 12px;
-      letter-spacing: 1px;
-    }
-
-    .status-badge.alert {
-      background: var(--accent-red);
-      color: #fff;
-      animation: pulse-alert 0.5s infinite;
-    }
-
-    @keyframes pulse-alert {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-
-    /* ===== MAIN CONTENT ===== */
-    .main-content {
-      padding: 30px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    /* ===== EMPTY STATE ===== */
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 70vh;
-      text-align: center;
-    }
-
-    .empty-state .icon {
-      font-size: 120px;
-      margin-bottom: 30px;
-      opacity: 0.3;
-    }
-
-    .empty-state h2 {
-      font-size: 36px;
-      color: var(--text-secondary);
-      margin-bottom: 10px;
-    }
-
-    .empty-state p {
-      font-size: 18px;
-      color: var(--text-secondary);
-      opacity: 0.7;
-    }
-
-    /* ===== GRID DE CASOS ===== */
-    .cases-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(550px, 1fr));
-      gap: 30px;
-      width: 100%;
-      max-width: 1400px;
-    }
-
-    /* ===== CARD PRINCIPAL ===== */
-    .cc-card {
-      background: var(--bg-card);
-      border: 3px solid var(--accent-red);
-      border-radius: 24px;
-      overflow: hidden;
-      animation: card-glow 2s infinite alternate;
-    }
-
-    @keyframes card-glow {
-      from { box-shadow: 0 0 20px var(--accent-red-glow); }
-      to { box-shadow: 0 0 60px var(--accent-red-glow); }
-    }
-
-    .cc-card.acknowledged {
-      border-color: var(--accent-green);
-      animation: none;
-      box-shadow: 0 0 30px var(--accent-green-glow);
-    }
-
-    /* Onda Vermelha Banner */
-    .onda-banner {
-      background: linear-gradient(90deg, #7f1d1d, #991b1b, #7f1d1d);
-      background-size: 200% 100%;
-      animation: onda-slide 2s linear infinite;
-      padding: 20px;
-      text-align: center;
-    }
-
-    @keyframes onda-slide {
-      0% { background-position: 0% 50%; }
-      100% { background-position: 200% 50%; }
-    }
-
-    .onda-banner h2 {
-      font-size: 28px;
-      font-weight: 900;
-      letter-spacing: 3px;
-      text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-    }
-
-    .onda-banner.acknowledged {
-      background: linear-gradient(90deg, #065f46, #047857, #065f46);
-      animation: none;
-    }
-
-    /* Card Body */
-    .card-body {
-      padding: 30px;
-    }
-
-    /* Patient Info */
-    .patient-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 25px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .patient-main {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .patient-avatar {
-      width: 70px;
-      height: 70px;
-      background: linear-gradient(135deg, var(--accent-red), var(--accent-orange));
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 32px;
-      font-weight: 900;
-    }
-
-    .patient-details h3 {
-      font-size: 28px;
-      font-weight: 900;
-      margin-bottom: 5px;
-    }
-
-    .patient-details span {
-      font-size: 16px;
-      color: var(--text-secondary);
-    }
-
-    .patient-id {
-      font-family: 'JetBrains Mono', monospace;
-      background: var(--bg-primary);
-      padding: 10px 16px;
-      border-radius: 10px;
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
-
-    /* Timer Central */
-    .timer-section {
-      background: var(--bg-primary);
-      border-radius: 20px;
-      padding: 30px;
-      text-align: center;
-      margin-bottom: 25px;
-    }
-
-    .timer-label {
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      color: var(--text-secondary);
-      margin-bottom: 10px;
-    }
-
-    .timer-value {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 80px;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent-green), #00c853);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 60px var(--accent-green-glow);
-    }
-
-    .timer-value.waiting {
-      background: linear-gradient(135deg, var(--accent-orange), #ffab00);
-      -webkit-background-clip: text;
-      animation: timer-pulse 1s infinite;
-    }
-
-    @keyframes timer-pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
-    }
-
-    .timer-sub {
-      font-size: 14px;
-      color: var(--text-secondary);
-      margin-top: 10px;
-    }
-
-    /* Info Cards */
-    .info-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 15px;
-      margin-bottom: 25px;
-    }
-
-    .info-card {
-      background: var(--bg-primary);
-      padding: 20px;
-      border-radius: 16px;
-      text-align: center;
-    }
-
-    .info-card .label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-secondary);
-      margin-bottom: 8px;
-    }
-
-    .info-card .value {
-      font-size: 16px;
-      font-weight: 800;
-    }
-
-    .info-card.highlight {
-      border: 2px solid var(--accent-orange);
-    }
-
-    .info-card.highlight .value {
-      color: var(--accent-orange);
-    }
-
-    /* Cirurgião Info */
-    .cirurgiao-box {
-      background: rgba(48, 209, 88, 0.1);
-      border: 2px solid var(--accent-green);
-      border-radius: 16px;
-      padding: 20px;
-      text-align: center;
-      margin-bottom: 25px;
-    }
-
-    .cirurgiao-box .label {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: var(--accent-green);
-      margin-bottom: 8px;
-    }
-
-    .cirurgiao-box .value {
-      font-size: 20px;
-      font-weight: 800;
-    }
-
-    /* Botões */
-    .action-buttons {
-      display: flex;
-      gap: 15px;
-    }
-
-    .btn {
-      flex: 1;
-      padding: 20px;
-      border: none;
-      border-radius: 16px;
-      font-weight: 800;
-      font-size: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .btn:active {
-      transform: scale(0.98);
-    }
-
-    .btn-reconhecer {
-      background: linear-gradient(135deg, var(--accent-orange), #ffab00);
-      color: #000;
-      box-shadow: 0 4px 25px var(--accent-orange-glow);
-    }
-
-    .btn-encerrar {
-      background: linear-gradient(135deg, var(--accent-green), #00c853);
-      color: #fff;
-      box-shadow: 0 4px 25px var(--accent-green-glow);
-    }
-
-    .btn-disabled {
-      background: var(--bg-primary);
-      border: 2px solid var(--border);
-      color: var(--text-secondary);
-      cursor: not-allowed;
-    }
-
-    /* ===== AUDIO INDICATOR ===== */
-    .audio-indicator {
-      position: fixed;
-      bottom: 90px;
-      right: 22px;
-      background: var(--bg-card);
-      border: 2px solid var(--border);
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.3s;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-      z-index: 8000;
-    }
-
-    .audio-indicator:hover {
-      border-color: var(--accent-teal);
-      transform: scale(1.08);
-    }
-
-    .audio-indicator.active {
-      border-color: var(--accent-green);
-      box-shadow: 0 0 18px rgba(48,209,88,0.4);
-    }
-
-    .audio-indicator .icon {
-      font-size: 22px;
-    }
-
-    .audio-indicator .text {
-      display: none;
-    }
-
-    /* ===== RESPONSIVE ===== */
-    @media (max-width: 700px) {
-      .cases-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .info-row {
-        grid-template-columns: 1fr;
-      }
-      
-      .timer-value {
-        font-size: 56px;
-      }
-
-      .patient-details h3 {
-        font-size: 20px;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="cc.css">
+  <link rel="stylesheet" href="shared.css">
 </head>
 <body>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toastContainer"></div>
 
   <!-- TELA DE LOGIN -->
   <div class="login-overlay" id="loginOverlay">
@@ -575,6 +36,7 @@
       <span>MONITORAMENTO DE ONDA VERMELHA</span>
     </div>
     <div class="header-right">
+      <span id="conectividadeIndicador" class="conectividade-online">● ONLINE</span>
       <div class="status-badge" id="statusBadge">AGUARDANDO</div>
       <div class="header-clock" id="clock">00:00:00</div>
     </div>
@@ -670,8 +132,10 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="runtime-config.js"></script>
   <script src="firebase-config.js"></script>
+  <script src="utils.js"></script>
 
   <script>
     // ===== ESTADO GLOBAL =====
@@ -1056,19 +520,21 @@
           ccAck: true,
           ccAckTime: agora()
         });
+        registrarLog('CC_RECONHECEU_ONDA', id, {});
       } catch (error) {
         console.error('Erro:', error);
+        mostrarToast('Erro ao reconhecer. Tente novamente.', 'error');
       }
     }
 
     // ===== ETAPA 1: REGISTRAR CHEGADA DO PACIENTE NO C.C. (independente de auditoria) =====
     async function registrarRecebimento(id) {
-      if (!confirm('🏥 CONFIRMAR CHEGADA DO PACIENTE\n\nO paciente acabou de chegar ao Centro Cirúrgico?\n\nIsso registrará o horário de chegada agora.\nO protocolo será finalizado após o preenchimento da auditoria pela Sala Vermelha.')) {
-        return;
-      }
-
-      try {
-        const casoDoc = await casosRef.doc(id).get();
+      mostrarConfirmacao(
+        'Confirmar Chegada do Paciente',
+        'O paciente acabou de chegar ao Centro Cirúrgico? Isso registrará o horário de chegada agora.',
+        async () => {
+          try {
+            const casoDoc = await casosRef.doc(id).get();
         const casoData = casoDoc.data();
         const ccRecebeuTime = agora();
 
@@ -1090,11 +556,14 @@
           statusNac: 'PACIENTE NO C.C. — AGUARDANDO AUDITORIA'
         });
 
-        alert('✅ Chegada registrada!\n\nHorário: ' + new Date().toLocaleTimeString('pt-BR') + '\n\nO protocolo será encerrado após o preenchimento da auditoria pela Sala Vermelha.');
-      } catch (error) {
-        console.error('Erro ao registrar recebimento:', error);
-        alert('Erro ao registrar. Tente novamente.');
-      }
+            registrarLog('CC_REGISTROU_CHEGADA', id, {});
+            mostrarToast('Chegada registrada! O protocolo será encerrado após auditoria pela Sala Vermelha.', 'success');
+          } catch (error) {
+            console.error('Erro ao registrar recebimento:', error);
+            mostrarToast('Erro ao registrar. Tente novamente.', 'error');
+          }
+        }
+      );
     }
 
     // ===== FUNÇÕES LEGADAS (mantidas para compatibilidade) =====
@@ -1216,8 +685,8 @@
       } else {
         caso = casos.find(c => c.id === id) || window.ultimoCasoCCFinalizado;
       }
-      if (!caso) { alert('Dados do caso não disponíveis. Tente gerar o PDF logo após o encerramento.'); return; }
-      if (!window.jspdf) { alert('PDF indisponível. Verifique conexão.'); return; }
+      if (!caso) { mostrarToast('Dados do caso não disponíveis. Tente gerar o PDF logo após o encerramento.', 'warning'); return; }
+      if (!window.jspdf) { mostrarToast('PDF indisponível. Verifique conexão.', 'error'); return; }
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       const VERDE = [0,120,80], PRETO = [30,30,30], CINZA = [100,100,100], CINZA_CLARO = [240,240,240];
@@ -1294,40 +763,52 @@
       doc.save(`PTM-CC-${caso.id}-${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.pdf`);
     }
 
-    // ===== SISTEMA DE LOGIN =====
-    const SENHA_SISTEMA = runtimeConfig.SENHA_CC || 'HRVJ2026';
-    const CHAVE_SESSAO = runtimeConfig.CHAVE_SESSAO_CC || 'ptm_autenticado';
-    
-    function verificarLogin() {
-      const senhaDigitada = document.getElementById('loginSenha').value;
+    // ===== SISTEMA DE LOGIN (Firebase Auth + hash SHA-256) =====
+    // Senha não está mais hardcoded aqui.
+    const CHAVE_SESSAO = 'ptm_autenticado_cc';
+
+    async function verificarLogin() {
+      const senhaEl = document.getElementById('loginSenha');
       const errorEl = document.getElementById('loginError');
-      
-      if (senhaDigitada === SENHA_SISTEMA) {
+      const btn = document.querySelector('#loginOverlay button');
+      const senhaDigitada = senhaEl.value;
+      if (!senhaDigitada) return;
+
+      if (btn) { btn.textContent = 'Verificando...'; btn.disabled = true; }
+
+      const ok = await verificarLoginCompleto(senhaDigitada, 'hashCc');
+
+      if (ok) {
         const expiracao = Date.now() + (24 * 60 * 60 * 1000);
         localStorage.setItem(CHAVE_SESSAO, expiracao.toString());
         document.getElementById('loginOverlay').classList.add('login-hidden');
         iniciarSistema();
       } else {
         errorEl.style.display = 'block';
-        document.getElementById('loginSenha').value = '';
-        document.getElementById('loginSenha').focus();
+        senhaEl.value = '';
+        senhaEl.focus();
         setTimeout(() => { errorEl.style.display = 'none'; }, 3000);
       }
+
+      if (btn) { btn.textContent = 'ENTRAR'; btn.disabled = false; }
     }
-    
+
     function verificarSessao() {
       const sessao = localStorage.getItem(CHAVE_SESSAO);
       if (sessao && parseInt(sessao) > Date.now()) {
-        document.getElementById('loginOverlay').classList.add('login-hidden');
-        iniciarSistema();
+        fazerLoginAnonimo && fazerLoginAnonimo().then(() => {
+          document.getElementById('loginOverlay').classList.add('login-hidden');
+          iniciarSistema();
+        });
       } else {
         localStorage.removeItem(CHAVE_SESSAO);
         document.getElementById('loginSenha').focus();
       }
     }
-    
+
     function iniciarSistema() {
       escutarCasos();
+      inicializarConectividade();
     }
 
     // ===== INIT =====

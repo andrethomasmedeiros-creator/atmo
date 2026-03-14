@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>PTM - Configurar Senhas</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: monospace; background: #0a0a0f; color: #fff; padding: 40px; }
+    h1 { color: #ff2d55; margin-bottom: 20px; }
+    .card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px; padding: 24px; margin-bottom: 20px; max-width: 600px; }
+    label { display: block; font-size: 12px; color: #8888a0; margin-bottom: 6px; }
+    input { width: 100%; padding: 12px; background: #0a0a0f; border: 1px solid #2a2a3a; border-radius: 8px; color: #fff; font-size: 16px; margin-bottom: 12px; }
+    button { padding: 12px 24px; background: #ff2d55; border: none; border-radius: 8px; color: #fff; font-weight: 700; cursor: pointer; }
+    .hash-output { background: #0a0a0f; padding: 12px; border-radius: 8px; font-size: 12px; color: #30d158; word-break: break-all; margin-top: 12px; }
+    .instructions { color: #8888a0; font-size: 13px; line-height: 1.8; }
+    .instructions code { background: #0a0a0f; padding: 2px 6px; border-radius: 4px; color: #00b4aa; }
+    h3 { color: #ff9500; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <h1>🔐 PTM — Configurar Senhas</h1>
+  <p style="color:#8888a0; margin-bottom:30px; font-size:14px;">
+    Use esta página para gerar os hashes SHA-256 das senhas e configurar no Firestore.
+    <strong style="color:#ff2d55;">Esta página não deve ser publicada em produção.</strong>
+  </p>
+
+  <div class="card">
+    <h3>Gerar Hash de Senha</h3>
+    <label>Digite a nova senha:</label>
+    <input type="password" id="senhaInput" placeholder="Nova senha...">
+    <button onclick="gerarHash()">GERAR HASH</button>
+    <div id="hashOutput" class="hash-output" style="display:none;"></div>
+  </div>
+
+  <div class="card">
+    <h3>Instruções de Configuração</h3>
+    <div class="instructions">
+      <p>1. Gere o hash para cada senha (Sala Vermelha, NAC, Centro Cirúrgico)</p>
+      <br>
+      <p>2. Acesse o <strong>Firebase Console</strong> → Firestore Database</p>
+      <br>
+      <p>3. Crie o documento: <code>config/auth</code></p>
+      <br>
+      <p>4. Adicione os campos:</p>
+      <ul style="margin-left:20px; margin-top:8px;">
+        <li><code>hashSalaVermelha</code>: &lt;hash da senha da Sala Vermelha&gt;</li>
+        <li><code>hashNac</code>: &lt;hash da senha do NAC&gt;</li>
+        <li><code>hashCc</code>: &lt;hash da senha do Centro Cirúrgico&gt;</li>
+      </ul>
+      <br>
+      <p>5. Salve e teste o login em cada página.</p>
+      <br>
+      <p style="color:#ff2d55;">⚠️ Durante a primeira configuração (enquanto config/auth não existir), qualquer senha será aceita. Configure imediatamente após o deploy.</p>
+    </div>
+  </div>
+
+  <script>
+    async function sha256(texto) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(texto);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function gerarHash() {
+      const senha = document.getElementById('senhaInput').value;
+      if (!senha) { alert('Digite uma senha'); return; }
+      const hash = await sha256(senha);
+      const output = document.getElementById('hashOutput');
+      output.style.display = 'block';
+      output.innerHTML = `<strong>Hash SHA-256:</strong><br>${hash}<br><br>Copie este valor para o campo correspondente no Firestore.`;
+    }
+
+    document.getElementById('senhaInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') gerarHash();
+    });
+  </script>
+</body>
+</html>
